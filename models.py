@@ -1,3 +1,7 @@
+# the basics
+import logging
+import json
+
 from google.appengine.ext import ndb
 # from google.appengine.api import search
 
@@ -109,67 +113,126 @@ from google.appengine.ext import ndb
 # Models
 ##################################################
 class TopicModel( ndb.Model ):
-    name = ndb.StringProperty( default="Psuedoscience", multiline=False, required=True )
-
+    # TODO: do not allow multiline names
+    name = ndb.StringProperty( default="Psuedoscience", required=True )
     description = ndb.TextProperty( default="It's real!!!", required=True )
-    
-    icon = ndb.LinkProperty( required=True )
-    
+    # icon = ndb.LinkProperty( required=True )
+    icon = ndb.StringProperty( required=True )
     # display this topic on the front page?
     display_front_page = ndb.BooleanProperty( default=False )
-    
     # this is a list of sub_topic keys
     sub_topics = ndb.KeyProperty( repeated=True )
-    
-    # num_sub_topics = ndb.IntegerProperty( default=0 )
+    num_sub_topics = ndb.IntegerProperty( default=0 )
 
-    
-    def update( self, name=None, description=None, icon=None, sub_topics=None  ):
+    def update( self, name, description, icon, sub_topics ):
         if name != None and name != self.name:
             self.name = name
-    
+
         if description != None and description != self.description:
             self.description = description
-    
+
         if icon != None and icon != self.icon:
             self.icon = icon
-    
+
         if sub_topics != None and sub_topics != self.sub_topics:
+            self.num_sub_topics = len( sub_topics )
             self.sub_topics = sub_topics
-    
+
         self.put()
 
-    
-    def add_sub_topic( self, sub_topic )
-    
+    def add_sub_topic( self, sub_topic ):
         if not isinstance( sub_topic, ndb.KeyProperty ):
             return False
-    
+
         if not isinstance( get_document_by_id( sub_topic ) ):
             return False
-    
+
         self.sub_topics.append( sub_topic )
-    
+        self.num_sub_topics += 1
         self.put()
 
-    
+    def json_encode( self ):
+        return json.dumps( self.__dict__ )
+
     @classmethod
     def _get_index( cls ):
         return "TopicModel"
 
+    # TODO: add number_of_topics, query_string to settings
+    @classmethod
+    def get_topics( cls, number_of_topics = 9, query_string = "" ):
+        query = cls.query( cls.display_front_page == True ).order( -cls.num_sub_topics )
+        topics = query.fetch( number_of_topics )
+
+        if len( topics ) == 0:
+            cls.create_topics()
+            return cls.get_topics( number_of_topics, query_string )
+
+        return topics
+
+    @classmethod
+    def create_topics( cls ):
+        music = TopicModel(
+                    name = "Music",
+                    description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
+                    icon = "..\icons\apple_music_icon_trns.png",
+                    display_front_page = True )
+        code = TopicModel(
+                    name = "Code",
+                    description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
+                    icon = "..\icons\apple_music_icon_trns.png",
+                    display_front_page = True )
+        design = TopicModel(
+                    name = "Design",
+                    description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
+                    icon = "..\icons\apple_music_icon_trns.png",
+                    display_front_page = True )
+        politics = TopicModel(
+                    name = "Politics",
+                    description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
+                    icon = "..\icons\apple_music_icon_trns.png",
+                    display_front_page = True )
+        life = TopicModel(
+                    name = "Life",
+                    description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
+                    icon = "..\icons\apple_music_icon_trns.png",
+                    display_front_page = True )
+        relationships = TopicModel(
+                    name = "Relationships",
+                    description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
+                    icon = "..\icons\apple_music_icon_trns.png",
+                    display_front_page = True )
+        health = TopicModel(
+                    name = "Health",
+                    description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
+                    icon = "..\icons\apple_music_icon_trns.png",
+                    display_front_page = True )
+        school = TopicModel(
+                    name = "School",
+                    description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
+                    icon = "..\icons\apple_music_icon_trns.png",
+                    display_front_page = True )
+        random = TopicModel(
+                    name = "Random",
+                    description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
+                    icon = "..\icons\apple_music_icon_trns.png",
+                    display_front_page = True )
+        ndb.put_multi( [ music, code, design,
+                        politics, life, relationships,
+                        health, school, random ] )
 
 
 # class SubTopicModel( ndb.Model ):
 #     name = ndb.StringProperty( default="Phrenology", multiline=False, required=True )
-    
+
 #     description = ndb.TextProperty( default="Can you feel me?", required=True )
-    
+
 #     # list of topic keys
 #     topics = ndb.KeyProperty( repeated=True )
-    
+
 #     num_topics = ndb.IntegerProperty( default=1 )
-    
-#     # list of launchlist keys 
+
+#     # list of launchlist keys
 #     launchlist = ndb.KeyProperty( repeated=True )
 #     # num_launchlist = ndb.IntegerProperty( default=0 )
 
@@ -226,5 +289,3 @@ class TopicModel( ndb.Model ):
 #     last_name = ndb.StringProperty( default="Nietzsche" )
 #     # needs to be validated
 #     email = ndb.EmailProperty( required=True )
-    
-
