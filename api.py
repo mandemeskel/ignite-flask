@@ -6,7 +6,7 @@ import logging
 import json
 
 # Datastore models
-from models import TopicModel
+from models import TopicModel, SubscriberModel
 
 # Google APIs
 from google.appengine.api import search
@@ -20,9 +20,10 @@ from crossdomain import crossdomain
 
 app = Flask(__name__)
 app.debug = True
-
+DEVELOPING = True
 
 @app.route( "/api/topics", methods=["GET"] )
+# @crossdomain(origin='*',  methods=["GET"])
 def get_topics():
 	topics = TopicModel.get_topics();
 
@@ -40,7 +41,7 @@ def get_topics():
 			"status" : False,
 			"msg" : "no topics found :?"
 		}
-	
+
 	return json.dumps( result )
 
 
@@ -276,3 +277,37 @@ Handles PUT request
 # @crossdomain(origin='*',  methods=["PUT"])
 def update_account( account ):
 	pass
+
+
+# Misc handlers
+'''
+Handles POST request
+'''
+@app.route( "/api/subscribe", methods=["POST"] )
+# @crossdomain(origin='*',  methods=["POST"])
+def add_subscriber():
+	if DEVELOPING:
+		logging.log( logging.INFO, "add_subscriber: " + str( request.form ) )
+
+	if "email" not in request.form:
+		return json.dumps( {
+							"status" : False,
+							"msg" : "no email found"
+		} )
+
+	# TODO: validate email
+	subscriber = SubscriberModel( email = request.form["email"] )
+
+	# TODO: saving to ndb, exception wrap this
+	# TODO: should call custom put method that validates, checks for duplicates etc.
+	if subscriber.put():
+		if DEVELOPING:
+			logging.log( logging.INFO, "saved subscriber" )
+		return json.dumps( { "status" : True })
+	else:
+		if DEVELOPING:
+			logging.log( logging.INFO, subscriber.put() )
+			return json.dumps( {
+								"status" : False,
+								"msg" : "failed to save"
+			} )

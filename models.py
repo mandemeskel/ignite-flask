@@ -166,7 +166,12 @@ class TopicModel( ndb.Model ):
 
         if len( topics ) == 0:
             cls.create_topics()
-            return cls.get_topics( number_of_topics, query_string )
+            query = cls.query( cls.display_front_page == True ).order( -cls.num_sub_topics )
+            topics = query.fetch( number_of_topics )
+            # this recursion creates multiple copies of the topics
+            # in the datastore because the datastore requires time
+            # to update with new entities
+        #     return cls.get_topics( number_of_topics, query_string )
 
         return topics
 
@@ -175,47 +180,47 @@ class TopicModel( ndb.Model ):
         music = TopicModel(
                     name = "Music",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
-                    icon = "..\icons\apple_music_icon_trns.png",
+                    icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
         code = TopicModel(
                     name = "Code",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
-                    icon = "..\icons\apple_music_icon_trns.png",
+                    icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
         design = TopicModel(
                     name = "Design",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
-                    icon = "..\icons\apple_music_icon_trns.png",
+                    icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
         politics = TopicModel(
                     name = "Politics",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
-                    icon = "..\icons\apple_music_icon_trns.png",
+                    icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
         life = TopicModel(
                     name = "Life",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
-                    icon = "..\icons\apple_music_icon_trns.png",
+                    icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
         relationships = TopicModel(
                     name = "Relationships",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
-                    icon = "..\icons\apple_music_icon_trns.png",
+                    icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
         health = TopicModel(
                     name = "Health",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
-                    icon = "..\icons\apple_music_icon_trns.png",
+                    icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
         school = TopicModel(
                     name = "School",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
-                    icon = "..\icons\apple_music_icon_trns.png",
+                    icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
         random = TopicModel(
                     name = "Random",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
-                    icon = "..\icons\apple_music_icon_trns.png",
+                    icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
         ndb.put_multi( [ music, code, design,
                         politics, life, relationships,
@@ -284,8 +289,10 @@ class TopicModel( ndb.Model ):
 #     resources = ndb.ListProperty( item_type=ndb.KeyProperty )
 
 
-# class SubscriberModel( ndb.Model ):
-#     first_name = ndb.StringProperty( default="Friedrich" )
-#     last_name = ndb.StringProperty( default="Nietzsche" )
-#     # needs to be validated
-#     email = ndb.EmailProperty( required=True )
+class SubscriberModel( ndb.Model ):
+    # TODO: email needs to be validated
+    email = ndb.StringProperty( required=True )
+    first_name = ndb.StringProperty( default="Friedrich" )
+    last_name = ndb.StringProperty( default="Nietzsche" )
+    occupation = ndb.StringProperty( default="Deranged Lunatic" )
+    age = ndb.IntegerProperty( default=0 )

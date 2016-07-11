@@ -1,6 +1,6 @@
 <!doctype html>
 
-<html lang="en">
+<html lang="en" ng-app="ignite">
 
 <head>
 	<meta charset="utf-8">
@@ -11,10 +11,14 @@
 	<meta name="author" content="Ignite">
 
 	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-	<link rel="stylesheet" href="css/styles.css?v=1.0">
+	<link rel="stylesheet" href="frontend/css/styles.css?v=1.0">
 
-	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
-	<script src="js/scripts.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+
+	<!-- <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script> -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.js"></script>
+
+	<script src="frontend/js/app.js"></script>
 
 	<!--[if lt IE 9]>
 	<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
@@ -22,9 +26,55 @@
 </head>
 
 
-<body>
+<body class="minimalist" ng-controller="mainCtrlr">
 
-	HELLO NINA!!!
+	<div class="container-fluid">
+
+		<div id="header" class="row">
+
+			<div class="col-xs-6">
+				<span>Nina</span>
+			</div>
+
+			<div class="col-xs-6">
+				<button id="login_btn" class="btn btn-dark">login</button>
+			</div>
+
+		</div>
+
+
+		<div id="topics" class="row">
+
+			<div class="topics-wrapper col-xs-12">
+
+				<div class="topic topic.name" ng-repeat="topic in front_page_topics">
+
+					<img class="icon" src="{{ topic.icon }}" alt="{{ topic.name }}"/>
+
+					<span class="name" >{{ topic.name }}</span>
+
+					<!-- TODO: load topic page, update browser url -->
+					<a class="overlay" href="../api/topic/{{ topic.key }}" rel="next" ng-click=""></a>
+
+				</div>
+
+			</div>
+
+		</div>
+
+
+		<div id="footer" class="row">
+
+			<form id="subscribe" ng-submit="addSubscriber( '#subscribe' )">
+
+				<input name="email" type="email" ng-model="subscriber.email" placeholder="your@email.com" required/>
+				<input class="btn btn-dark" type="submit" value="join us"/>
+
+			</form>
+
+		</div>
+
+	</div>
 
 </body>
 

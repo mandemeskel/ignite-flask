@@ -1,0 +1,110 @@
+body.minimalist {
+    width: 100vw;
+    height: 100vh;
+    /* display: block; */
+    background-color: rebeccapurple;
+    color: white;
+}
+
+#header {
+    padding-top: 5px;
+}
+
+#header button#login_btn {
+    float: right;
+}
+
+
+#topics {
+
+}
+
+#topics .topics-wrapper {
+    float: none;
+    margin: 0 auto;
+    max-width: 600px;
+}
+
+#topics .topic {
+    float: left;
+    padding: 15px;
+    position: relative;
+    max-height: 180px;
+    max-width: 180px;
+    width: 33%;
+    text-align: center;
+    transition: 1s;
+}
+
+#topics .topic:hover {
+    transform: scale(1.2);
+}
+
+#topics .topic:hover .name {
+    display: block;
+}
+
+#topics .topic .icon {
+    max-width: 150px;
+    width: 100%;
+}
+
+#topics .topic .name {
+    display: none;
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    text-transform: lowercase;
+}
+
+
+#footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    padding-bottom: 5px;
+}
+
+.minimalist input[type="email"] {
+    background-color: transparent;
+    border-color: transparent;
+    border-bottom: black solid 3px;
+    color: white;
+    min-width: 200px;
+    line-height: 28px;
+    transition: 1s;
+}
+
+.minimalist input[type="email"]:focus {
+    border-bottom-color: #4cae4c;
+    outline: none;
+}
+
+.minimalist input[type="submit"],
+.minimalist button {
+    border-radius: 0;
+}
+
+.minimalist .btn-dark {
+    background: black;
+    border: white solid 2px;
+    transition: 1s;
+}
+
+.minimalist .btn-dark:hover {
+    background: white;
+    border: black solid 2px;
+    color: black;
+}
+
+a.overlay {
+    cursor: pointer;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 100;
+    height: 100%;
+    width: 100%;
+}
