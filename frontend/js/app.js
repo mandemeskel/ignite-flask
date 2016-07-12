@@ -1,6 +1,6 @@
 var app = angular.module( "ignite", [] ),
     DEVELOPING = true,
-    BASE_URL = "http://192.168.42.64:8080", //"http://localhost:8080",
+    BASE_URL = "http://localhost:3636", //"http://192.168.42.64:8080", //"http://localhost:8080",
     BASE_API_URL = "/api";
 
 if( !DEVELOPING )

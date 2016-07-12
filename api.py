@@ -33,8 +33,11 @@ def get_topics():
 			"topics" : []
 		}
 
+		# TODO: move this logic to models.py
 		for topic in topics:
-			result["topics"].append( topic.to_dict() )
+			topic_dict = topic.to_dict()
+			topic_dict["key"] = topic.key.urlsafe()
+			result["topics"].append( topic_dict )
 
 	else:
 		result = {
@@ -58,11 +61,11 @@ def delete_topic( topic ):
 '''
 Handles GET request
 '''
-@app.route( "/api/topic/<topic>", methods=["GET"] )
+@app.route( "/api/topic/<topic_key>", methods=["GET"] )
 # @crossdomain(origin='*',  methods=["GET"])
-def get_topic( topic ):
-	pass
-
+def get_topic( topic_key ):
+	entity = TopicModel.get_topic( topic_key )
+	return json.dumps( entity )
 
 '''
 Handles OPTIONS request
@@ -96,18 +99,18 @@ def update_topic( topic ):
 '''
 Handles DELETE request
 '''
-@app.route( "/api/subtopic/<subtopic>", methods=["DELETE"] )
+@app.route( "/api/subtopic/<subtopic_key>", methods=["DELETE"] )
 # @crossdomain(origin='*',  methods=["DELETE"])
-def delete_subtopic( subtopic ):
+def delete_subtopic( subtopic_key ):
 	pass
 
 
 '''
 Handles GET request
 '''
-@app.route( "/api/subtopic/<subtopic>", methods=["GET"] )
+@app.route( "/api/subtopic/<subtopic_key>", methods=["GET"] )
 # @crossdomain(origin='*',  methods=["GET"])
-def get_subtopic( subtopic ):
+def get_subtopic( subtopic_key ):
 	pass
 
 

@@ -138,7 +138,7 @@ class TopicModel( ndb.Model ):
             self.num_sub_topics = len( sub_topics )
             self.sub_topics = sub_topics
 
-        self.put()
+        return self.put()
 
     def add_sub_topic( self, sub_topic ):
         if not isinstance( sub_topic, ndb.KeyProperty ):
@@ -149,10 +149,24 @@ class TopicModel( ndb.Model ):
 
         self.sub_topics.append( sub_topic )
         self.num_sub_topics += 1
-        self.put()
+
+        return self.put()
 
     def json_encode( self ):
-        return json.dumps( self.__dict__ )
+        return json.dumps( self.to_dict() )
+
+    def create_sub_topics( self ):
+        music_production = SubTopicModel(
+            name = "Music Production",
+            description = "Theory is a very useful tool, as it is a logic that makes sense of what sounds good in music and why. But what is theory even used for? How does it benefit you? As a beginner, it quickly enables music to make much more sense. As you practice composing and producing, it will open doors to more complicated, layer-driven forms of writing that connects your music to itself in various ways and makes it sound good and powerful.",
+            topics = self.key,
+            num_topics = 1
+        )
+
+        return self.add_sub_topic( music_production )
+        # music_theory = LaunchListModel(
+        #     name = ""
+        # )
 
     @classmethod
     def _get_index( cls ):
@@ -175,6 +189,28 @@ class TopicModel( ndb.Model ):
         #     return cls.get_topics( number_of_topics, query_string )
 
         return topics
+
+    @classmethod
+    def get_topic( cls, urlsafe_key ):
+        topic_key = ndb.Key( urlsafe=urlsafe_key )
+        topic = topic_key.get()
+        sub_topics = topic.sub_topics
+
+        if len( sub_topics ) == 0:
+            
+        else:
+            for index in enumerate( sub_topics ):
+                sub_topic = sub_topics[ index ]
+                sub_topics[ index ] = sub_topic.get_dict();
+
+            # for index in enumerate( sub_topics ):
+            #     sub_topic = sub_topics[ index ]
+            #     sub_topics[ index ] = sub_topic.urlsafe()
+
+        topic_dict = topic.to_dict()
+        topic_dict["key"] = topic.key.urlsafe()
+
+        return topic_dict
 
     @classmethod
     def create_topics( cls ):
@@ -246,6 +282,16 @@ class SubTopicModel( ndb.Model ):
     # list of launchlist keys
     launchlist = ndb.KeyProperty( repeated=True )
     num_launchlist = ndb.IntegerProperty( default=0 )
+
+    # def get_dict( self ):
+    #     sub_topic_dict = self.to_dict();
+
+    @classmethod
+    def get_dict( cls, key ):
+        sub_topic = key.get()
+        sub_topic_dict = sub_topic.to_dict()
+        sub_topic_dict["key"] = sub_topic.key.urlsafe()
+        return sub_topic_dict
 
 
 class LaunchListModel( ndb.Model ):

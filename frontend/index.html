@@ -43,11 +43,12 @@
 		</div>
 
 
+		<!-- front page -->
 		<div id="topics" class="row">
 
 			<div class="topics-wrapper col-xs-12">
 
-				<div class="topic topic.name" ng-repeat="topic in front_page_topics">
+				<div id="topic-{{ topic.name }}" class="topic" ng-repeat="topic in front_page_topics">
 
 					<img class="icon" src="{{ topic.icon }}" alt="{{ topic.name }}"/>
 
@@ -61,6 +62,38 @@
 			</div>
 
 		</div>
+		<!-- /front page -->
+
+
+		<!-- topic page -->
+		<div id="topic" class="row" ng-show="">
+
+			<div class="topic-wrapper col-xs-12">
+
+				<!-- NOTE: subtopics dont have their own icons, will use parent topic icons -->
+				<img class="topic-icon" href="{{ topic.icon }}"/>
+
+				<h2 class="topic-name">{{ topic.name }}</h2>
+
+				<p class="topic-description">{{ topic.description }}</p>
+
+				<ul class="topic-sub_topics">
+
+					<!-- TODO: add ratings stuff -->
+					<li id="sub_topic-{{ sub_topic.name }}" class="sub_topic" ng-repeat="sub_topic in topic.sub_topics">
+
+						<a class="sub_topic-link" href="/api/subtopic/{{ sub_topic.key }}" ng-click="">{{ sub_topic.name }}</a>
+
+						<p class="sub_topic-description">{{ sub_topic.description }}</p>
+
+					</li>
+
+				</ul>
+
+			</div>
+
+		</div>
+		<!-- /topic page -->
 
 
 		<div id="footer" class="row">
