@@ -4,7 +4,7 @@ var app = angular.module( "ignite", [] ),
     BASE_API_URL = "/api";
 
 if( !DEVELOPING )
-    BASE_URL = "ignite-3636.appspot.com";
+    BASE_URL = "https://lnchlist.appspot.com";
 
 BASE_API_URL = BASE_URL + BASE_API_URL;
 

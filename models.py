@@ -159,6 +159,7 @@ class TopicModel( ndb.Model ):
         return "TopicModel"
 
     # TODO: add number_of_topics, query_string to settings
+    # TODO: check for duplicates
     @classmethod
     def get_topics( cls, number_of_topics = 9, query_string = "" ):
         query = cls.query( cls.display_front_page == True ).order( -cls.num_sub_topics )
@@ -182,111 +183,120 @@ class TopicModel( ndb.Model ):
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
                     icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
+
         code = TopicModel(
                     name = "Code",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
                     icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
+
         design = TopicModel(
                     name = "Design",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
                     icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
+
         politics = TopicModel(
                     name = "Politics",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
                     icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
+
         life = TopicModel(
                     name = "Life",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
                     icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
+
         relationships = TopicModel(
                     name = "Relationships",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
                     icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
+
         health = TopicModel(
                     name = "Health",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
                     icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
+
         school = TopicModel(
                     name = "School",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
                     icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
+
         random = TopicModel(
                     name = "Random",
                     description = "'Happiness today is just a song away, just a song\nI love your music, baby' \n- Just Like Music, Erick Sermon feat. Marvin Gaye",
                     icon = "../icons/apple_music_icon_trns.png",
                     display_front_page = True )
+
         ndb.put_multi( [ music, code, design,
                         politics, life, relationships,
                         health, school, random ] )
 
 
-# class SubTopicModel( ndb.Model ):
-#     name = ndb.StringProperty( default="Phrenology", multiline=False, required=True )
-
-#     description = ndb.TextProperty( default="Can you feel me?", required=True )
-
-#     # list of topic keys
-#     topics = ndb.KeyProperty( repeated=True )
-
-#     num_topics = ndb.IntegerProperty( default=1 )
-
-#     # list of launchlist keys
-#     launchlist = ndb.KeyProperty( repeated=True )
-#     # num_launchlist = ndb.IntegerProperty( default=0 )
+class SubTopicModel( ndb.Model ):
+    name = ndb.StringProperty( default="Phrenology", required=True )
+    description = ndb.TextProperty( default="Can you feel me?", required=True )
+    # list of topic keys that this subtopic is included in
+    topics = ndb.KeyProperty( repeated=True )
+    num_topics = ndb.IntegerProperty( default=1 )
+    # list of launchlist keys
+    launchlist = ndb.KeyProperty( repeated=True )
+    num_launchlist = ndb.IntegerProperty( default=0 )
 
 
-# class LaunchListModel( ndb.Model ):
-#     name = ndb.StringProperty( default="How to fleece rubes?", required=True )
-#     description = ndb.TextProperty( default="You will learn.", required=True )
-#     # list of Resoruce that belong to this LaunchList
-#     # only holds refrences, empty list by default
-#     resoruce = ndb.ListProperty( item_type=ndb.KeyProperty )
-#     # num_resoruce = ndb.IntegerProperty( default=0 )
-#     # rating = ndb.RatingProperty()
-#     # the user that added to this tutorial
-#     contributor = ndb.KeyProperty()
-#     rating = ndb.StringProperty()
+class LaunchListModel( ndb.Model ):
+    name = ndb.StringProperty( default="How to fleece rubes?", required=True )
+    description = ndb.TextProperty( default="You will learn.", required=True )
+    # list of Resoruce that belong to this LaunchList
+    # only holds refrences, empty list by default
+    resoruce = ndb.KeyProperty( repeated=True )
+    # num_resoruce = ndb.IntegerProperty( default=0 )
+    # rating = ndb.RatingProperty()
+    # the user that added to this tutorial
+    contributor = ndb.KeyProperty()
+    rating = ndb.StringProperty()
 
 
-# class ResourceModel( ndb.Model ):
-#     name = ndb.StringProperty( default="How to fleece rubes?", required=True )
-#     description = ndb.TextProperty( default="You will learn.", required=True )
-#     link = ndb.LinkProperty( default="mta.io/#", required=True)
-#     # resource_type = ndb.KeyProperty()
-#     resource_type = ndb.StringProperty( default="Text", required=True )
-#     # rating = ndb.RatingProperty()
-#     source_author = ndb.StringProperty()
-#     source_date = ndb.DateProperty()
-#     # the user that added to this resource
-#     contributor = ndb.KeyProperty()
-#     # list of LaunchLists that this Resource belong to
-#     # only holds refrences, empty list by default
-#     launch_list = ndb.ListProperty( item_type=ndb.KeyProperty )
-#     # num_launch_list = ndb.IntegerProperty( default=0 )
-#     rating_smily = ndb.StringProperty()
+class ResourceModel( ndb.Model ):
+    name = ndb.StringProperty( default="How to fleece rubes?", required=True )
+    description = ndb.TextProperty( default="You will learn.", required=True )
+    link = ndb.StringProperty( default="mta.io/#", required=True)
+    # resource_type = ndb.KeyProperty()
+    resource_type = ndb.StringProperty( default="Text", required=True )
+    # rating = ndb.RatingProperty()
+    source_author = ndb.StringProperty()
+    source_date = ndb.DateProperty()
+    # the user that added to this resource
+    contributor = ndb.KeyProperty()
+    date_created = ndb.DateProperty( auto_now_add=True )
+    date_update = ndb.DateProperty( auto_now=True )
+    # list of LaunchLists that this Resource belong to
+    # only holds refrences, empty list by default
+    launch_list = ndb.KeyProperty( repeated=True )
+    # num_launch_list = ndb.IntegerProperty( default=0 )
+    rating_smily = ndb.StringProperty()
 
 
-# class AccountModel( ndb.Model ):
-#     first_name = ndb.StringProperty( default="Friedrich", required=True )
-#     last_name = ndb.StringProperty( default="Nietzsche", required=True )
-#     profile_type = ndb.StringProperty( required=True )
-#     # needs to be validated
-#     email = ndb.EmailProperty( required=True )
-#     description = ndb.TextProperty( default="Iam the UberMentch!", required=True )
-#     # "A user with a Google account"
-#     user = UserProperty( auto_current_user=True, auto_current_user_add=True, required=True )
-#     # list of LaunchLists that this Account Created
-#     # only holds refrences, empty list by default
-#     launch_list = ndb.ListProperty( item_type=ndb.KeyProperty )
-#     # list of LaunchLists that this Account Created
-#     resources = ndb.ListProperty( item_type=ndb.KeyProperty )
+class AccountModel( ndb.Model ):
+    first_name = ndb.StringProperty( default="Friedrich", required=True )
+    last_name = ndb.StringProperty( default="Nietzsche", required=True )
+    profile_type = ndb.StringProperty( required=True )
+    # TODO: needs to be validated
+    email = ndb.StringProperty( required=True )
+    description = ndb.TextProperty( default="Iam the UberMentch!", required=True )
+    # "A user with a Google account"
+    user = ndb.UserProperty( auto_current_user=True, auto_current_user_add=True, required=True )
+    date_created = ndb.DateProperty( auto_now_add=True )
+    date_update = ndb.DateProperty( auto_now=True )
+    # list of LaunchLists that this Account Created
+    # only holds refrences, empty list by default
+    launch_list = ndb.KeyProperty( repeated=True )
+    # list of LaunchLists that this Account Created
+    resources = ndb.KeyProperty( repeated=True )
 
 
 class SubscriberModel( ndb.Model ):

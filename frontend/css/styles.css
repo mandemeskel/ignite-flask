@@ -45,11 +45,15 @@ body.minimalist {
 }
 
 #topics .topic .icon {
+    background: white;
+    border: 2px solid #d0c9d6;
+    border-radius: 32px;
     max-width: 150px;
     width: 100%;
 }
 
 #topics .topic .name {
+    color: black;
     display: none;
     position: absolute;
     bottom: 20px;
