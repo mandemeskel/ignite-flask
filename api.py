@@ -35,7 +35,7 @@ def get_topics():
 
 		# TODO: move this logic to models.py
 		for topic in topics:
-			topic_dict = topic.to_dict()
+			topic_dict = topic.to_dict( exclude=["sub_topics"] )
 			topic_dict["key"] = topic.key.urlsafe()
 			result["topics"].append( topic_dict )
 
@@ -52,9 +52,9 @@ def get_topics():
 '''
 Handles DELETE request
 '''
-@app.route( "/api/topic/<topic>", methods=["DELETE"] )
+@app.route( "/api/topic/<topic_key>", methods=["DELETE"] )
 # @crossdomain(origin='*',  methods=["DELETE"])
-def delete_topic( topic ):
+def delete_topic( topic_key ):
 	pass
 
 
@@ -65,7 +65,14 @@ Handles GET request
 # @crossdomain(origin='*',  methods=["GET"])
 def get_topic( topic_key ):
 	entity = TopicModel.get_topic( topic_key )
+	if entity == False:
+		result = {
+		    "status": True,
+		    "retry": True
+		}
+		return json.dumps( result )
 	return json.dumps( entity )
+
 
 '''
 Handles OPTIONS request

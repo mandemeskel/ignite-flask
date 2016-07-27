@@ -1,112 +1,9 @@
+# -*- coding: utf-8 -*-
 # the basics
 import logging
 import json
 
 from google.appengine.ext import ndb
-# from google.appengine.api import search
-
-
-# '''
-# Returns the index the document is saved under
-# '''
-# def get_document_index( document ):
-#     # if isinstance( document, TopicModel ):
-#     return document.__name__
-
-# '''
-# Returns a document by its id
-# @param [string] id - the id of document
-# @param [string] index_name - the name of Search Index
-# to search in
-# @return [object] document - the document object, needs to be cleaned
-# to be accessible as a dictionary
-# '''
-# def get_document_by_id( id, index_name ):
-#     index = search.Index( name=index_name )
-#     # TODO: wrap this in a try catch
-#     return index.get( id )
-
-
-#  '''
-# Need to send cursor string from results.cursor to client, if it exists
-# cursor_string = cursor.web_safe_string
-# '''
-# def query_index( query_string, index_name, query_options=None ):
-#     index = search.Index( name=index_name )
-#     results = []
-#     if query_options is None:
-#         query_options = create_query_options()
-#     query = search.Query(
-#         query_string=query_string,
-#         options=query_options
-#         )
-#     try:
-#         results = index.search( query )
-#     except search.Error:
-#         logging.exception( "Query failed" )
-#     return results
-
-
-# '''
-#     Sets the query options like...
-#     which fields should returned items have,
-#     if there should be a cursor to keep track of where in the query
-#     the user is
-# '''
-# def create_query_options( returned_fields, cursor=None, result_limit=10 ):
-#     if cursor is None:
-#         cursor = search.Cursor()
-#     query_options = search.QueryOptions(
-#         limit=result_limit,
-#         returned_fields=returned_fields,
-#         cursor=cursor
-#         )
-#     return query_options
-
-
-# '''
-# need to send query string to client to retrieve past query
-# '''
-# def create_query_string( query_dict ):
-#     query_string = ""
-#     for key in query_dict.keys():
-#         if query_dict[key] == "" or query_dict[key] == None:
-#             continue
-#         query_string += " " + key + "=" + str( query_dict[key] )
-#     return query_string
-
-
-# '''
-# '''
-# def retrieve_query( query_string, cursor_string, index_name ):
-#     index = search.Index( name=index_name )
-#     cursor = search.Cursor( cursor_string )
-#     query_options = search.QueryOptions( cursor=cursor, limit=10 )
-#     query = search.Query( query_string=query_string,
-#                             options=query_options )
-#     return index.search( query )
-
-
-# '''
-# inserts document into index, saving it in the process
-# NOTE:
-# You can pass up to 200 documents at a time to the put() method.
-# Batching puts is more efficient than adding documents one at a time.
-# '''
-# def save_document( document, index_name ):
-#     index = search.Index( name=index_name )
-#     try:
-#         index.put( document )
-#     except search.Error:
-#         logging.exception( "Failed to save document" )
-
-
-# def update_document( document ):
-#     pass
-
-
-# def delete_document( document ):
-#     pass
 
 
 ##################################################
@@ -140,33 +37,53 @@ class TopicModel( ndb.Model ):
 
         return self.put()
 
+    # TODO: check if subtopic is already in topic
+    # def add_sub_topic( self, sub_topic ):
+    #     if not isinstance( sub_topic, ndb.KeyProperty ):
+    #         return False
+    #
+    #     if not isinstance( get_document_by_id( sub_topic ) ):
+    #         return False
+    #
+    #     self.sub_topics.append( sub_topic )
+    #     self.num_sub_topics += 1
+    #
+    #     return self.put()
     def add_sub_topic( self, sub_topic ):
-        if not isinstance( sub_topic, ndb.KeyProperty ):
+        if not isinstance( sub_topic, SubTopicModel ):
             return False
 
-        if not isinstance( get_document_by_id( sub_topic ) ):
-            return False
-
-        self.sub_topics.append( sub_topic )
+        sub_topic.topics.append( self.key )
+        sub_topic_key = sub_topic.put()
+        self.sub_topics.append( sub_topic_key )
         self.num_sub_topics += 1
 
-        return self.put()
+        return sub_topic_key
 
     def json_encode( self ):
         return json.dumps( self.to_dict() )
 
-    def create_sub_topics( self ):
-        music_production = SubTopicModel(
-            name = "Music Production",
-            description = "Theory is a very useful tool, as it is a logic that makes sense of what sounds good in music and why. But what is theory even used for? How does it benefit you? As a beginner, it quickly enables music to make much more sense. As you practice composing and producing, it will open doors to more complicated, layer-driven forms of writing that connects your music to itself in various ways and makes it sound good and powerful.",
-            topics = self.key,
-            num_topics = 1
-        )
-
-        return self.add_sub_topic( music_production )
-        # music_theory = LaunchListModel(
-        #     name = ""
+    def create_sub_topics( self, number = 4 ):
+        # music_production = SubTopicModel(
+        #     name = "Music Production",
+        #     description = "Theory is a very useful tool, as it is a logic that makes sense of what sounds good in music and why. But what is theory even used for? How does it benefit you? As a beginner, it quickly enables music to make much more sense. As you practice composing and producing, it will open doors to more complicated, layer-driven forms of writing that connects your music to itself in various ways and makes it sound good and powerful.",
+        #     topics = self.key,
+        #     num_topics = 1
         # )
+        subtopic_keys = []
+        # create dummy subtopics and add them to topic
+        for num in range( 0, number ):
+            subtopic = SubTopicModel(
+                name = "Subtopic",
+                description = "A subtopic",
+                topics = [ self.key ],
+                num_topics = 1
+            )
+            subtopic_keys.append( self.add_sub_topic( subtopic ) )
+            # subtopic.create_launchlists()
+
+        self.put()
+        return subtopic_keys
 
     @classmethod
     def _get_index( cls ):
@@ -190,25 +107,139 @@ class TopicModel( ndb.Model ):
 
         return topics
 
+    def create_music_sub_topics( self ):
+        # account
+        nina = AccountModel(
+            first_name = "Nina",
+            last_name = "Krishnan",
+            # profile_type = ""
+            email = "ninakrish@gmail.com",
+            description = "NDMA - NenDogMakesArt"
+        )
+        nina_key = nina.put()
+        # resources
+        music_theory1 = ResourceModel(
+            name = "A Starter’s Guide to Music Production",
+            description = "A crowd-sourced Reddit compilation, ideal for beginners who want to understand why music theory is important and how it can be used.",
+            # TODO: should be a constant
+            resource_type = "LINK",
+            source = "https://www.reddit.com/r/edmproduction/comments/1uvtxw/a_starters_guide_to_music_theory/",
+            # source_author = "",
+            # source_date = "",
+            contributor = nina_key,
+        )
+        music_theory2 = ResourceModel(
+            name = "How Basic Chords Work",
+            description = "This lesson is on chords, how they work, and the basic intervals that make them up. Learning the underlying music theory behind chords will not only allow you to find any chord you want, anywhere you want, it will also give you a solid foundation to build your entire understanding of music theory on.",
+            # TODO: should be a constant
+            resource_type = "VIDEO",
+            source = "https://www.youtube.com/watch?v=5Y01jIorp",
+            # source_author = "",
+            # source_date = "",
+            contributor = nina_key,
+        )
+        music_theory3 = ResourceModel(
+            name = "Notes, Chords and Melodies",
+            description = "This lesson is on chords, how they work, and the basic intervals that make them up. Learning the underlying music theory behind chords will not only allow you to find any chord you want, anywhere you want, it will also give you a solid foundation to build your entire understanding of music theory on.",
+            # TODO: should be a constant
+            resource_type = "VIDEO",
+            source = "https://www.youtube.com/watch?v=rZr5k1_9Dds",
+            # source_author = "",
+            # source_date = "",
+            contributor = nina_key,
+        )
+        music_theory4 = ResourceModel(
+            name = "Chord Creation",
+            description = "A video on easy music theory technique to figuring out chord creation.",
+            # TODO: should be a constant
+            resource_type = "VIDEO",
+            source = "https://www.youtube.com/watch?v=g9DTgJFbcvg",
+            # source_author = "",
+            # source_date = "",
+            contributor = nina_key,
+        )
+        music_theory5 = ResourceModel(
+            name = "Making Melodies",
+            description = "Melodies are a foundation to any sort of music production and this tutorial teaches you how to craft together melodies.",
+            # TODO: should be a constant
+            resource_type = "VIDEO",
+            source = "https://www.youtube.com/watch?v=pMDOwZkH3y0",
+            # source_author = "",
+            # source_date = "",
+            contributor = nina_key,
+        )
+        ndb.put_multi(
+            music_theory1,
+            music_theory2,
+            music_theory3,
+            music_theory4,
+            music_theory5
+        )
+        # LaunchList
+        music_theory = LaunchListModel(
+            name = "Music Theory",
+            description = "Theory is a very useful tool, as it is a logic that makes sense of what sounds good in music and why. But what is theory even used for? How does it benefit you? As a beginner, it quickly enables music to make much more sense. As you practice composing and producing, it will open doors to more complicated, layer-driven forms of writing that connects your music to itself in various ways and makes it sound good and powerful.",
+            contributor = [ nina_key ],
+            resources = [
+                music_theory1.key,
+                music_theory2.key,
+                music_theory3.key,
+                music_theory4.key,
+                music_theory5.key
+            ]
+        )
+        music_theory.put()
+        # LaunchList - sub-topic
+        music_production = LaunchListModel(
+            name = "Music Production",
+            description = "Nina Krishnan’s LaunchList for Music Production",
+            launchlists = [ music_theory ],
+            contributor = [ nina_key ],
+            rating = ""
+        )
+        music_production.put()
+        # add sub-topic to user's profile
+        nina.launchlists = [ music_production.key, music_theory.key ]
+        # add sub-topic to topic
+        self.sub_topics = [ music_production.key ]
+        # update user with resources
+        nina.resources = [
+            music_theory1,
+            music_theory2,
+            music_theory3,
+            music_theory4,
+            music_theory5
+        ]
+        # save to ndb
+        ndb.put_multi(
+            nina,
+            music_production,
+            music_theory,
+            music_theory1,
+            music_theory2,
+            music_theory3,
+            music_theory4,
+            music_theory5
+        )
+
     @classmethod
     def get_topic( cls, urlsafe_key ):
         topic_key = ndb.Key( urlsafe=urlsafe_key )
         topic = topic_key.get()
         sub_topics = topic.sub_topics
 
+        # TODO: remove this when not debugging
         if len( sub_topics ) == 0:
-            
+            topic.create_sub_topics()
+            return False
         else:
-            for index in enumerate( sub_topics ):
-                sub_topic = sub_topics[ index ]
-                sub_topics[ index ] = sub_topic.get_dict();
-
-            # for index in enumerate( sub_topics ):
-            #     sub_topic = sub_topics[ index ]
-            #     sub_topics[ index ] = sub_topic.urlsafe()
+            for index, item in enumerate( sub_topics ):
+                sub_topic_key = sub_topics[ index ]
+                sub_topics[ index ] = SubTopicModel.get_dict( sub_topic_key );
 
         topic_dict = topic.to_dict()
-        topic_dict["key"] = topic.key.urlsafe()
+        topic_dict[ "sub_topics" ] = sub_topics
+        topic_dict[ "key" ] = topic_key.urlsafe()
 
         return topic_dict
 
@@ -280,8 +311,8 @@ class SubTopicModel( ndb.Model ):
     topics = ndb.KeyProperty( repeated=True )
     num_topics = ndb.IntegerProperty( default=1 )
     # list of launchlist keys
-    launchlist = ndb.KeyProperty( repeated=True )
-    num_launchlist = ndb.IntegerProperty( default=0 )
+    launchlists = ndb.KeyProperty( repeated=True )
+    num_launchlists = ndb.IntegerProperty( default=0 )
 
     # def get_dict( self ):
     #     sub_topic_dict = self.to_dict();
@@ -289,58 +320,119 @@ class SubTopicModel( ndb.Model ):
     @classmethod
     def get_dict( cls, key ):
         sub_topic = key.get()
-        sub_topic_dict = sub_topic.to_dict()
+        sub_topic_dict = sub_topic.to_dict( exclude = ["topics", "launchlists"] )
         sub_topic_dict["key"] = sub_topic.key.urlsafe()
         return sub_topic_dict
+
+    # TODO: create batch add_launchlists function for effi
+    # TODO: check if ll is already in subtopic
+    def add_launchlist( self, ll ):
+        if not isinstance( ll, LaunchListModel ):
+            return False
+
+        ll.subtopics.append( self.key )
+        ll_key = ll.put()
+        self.launchlists.append( ll_key )
+
+        return ll_key
+
+    def create_launchlists( self, number = 5 ):
+        launchlist_keys = []
+
+        for num in range( 0, number ):
+            ll = LaunchListModel(
+                name = "Launch List",
+                description = "A description",
+            )
+            ll.create_resources( number )
+            launchlist_keys.append( self.add_launchlist( ll ) )
+
+        self.put()
+        return launchlist_keys
 
 
 class LaunchListModel( ndb.Model ):
     name = ndb.StringProperty( default="How to fleece rubes?", required=True )
     description = ndb.TextProperty( default="You will learn.", required=True )
+    parent_launchlists = ndb.KeyProperty( repeated=True )
+    child_launchlists = ndb.KeyProperty( repeated=True )
+    subtopics = ndb.KeyProperty( repeated=True )
     # list of Resoruce that belong to this LaunchList
     # only holds refrences, empty list by default
-    resoruce = ndb.KeyProperty( repeated=True )
+    resoruces = ndb.KeyProperty( repeated=True )
     # num_resoruce = ndb.IntegerProperty( default=0 )
     # rating = ndb.RatingProperty()
-    # the user that added to this tutorial
+    # the user that created this tutorial
     contributor = ndb.KeyProperty()
+    # users that can edit this tutorial
+    editors = ndb.KeyProperty( repeated=True )
     rating = ndb.StringProperty()
+
+    def create_resources( self, number = 6 ):
+        resource_keys = []
+
+        for num in range(0, number ):
+            resource = ResourceModel(
+                name = "Resource",
+                description = "A description",
+                source = "google.com",
+                resource_type = "LINK"
+            )
+            resource_keys.append( self.add_resource( resource ) )
+
+        # self.put()
+        return resource_keys
+
+    # TODO: check for duplicates
+    # TODO: create bulk add resources method
+    def add_resource( self, resource ):
+        if not isinstance( resource, ResourceModel ):
+            return False
+
+        resource.launchlists.append( self.key )
+        resource_key = resource.put()
+        self.resoruces.append( resource_key )
+
+        return resource_key
 
 
 class ResourceModel( ndb.Model ):
     name = ndb.StringProperty( default="How to fleece rubes?", required=True )
     description = ndb.TextProperty( default="You will learn.", required=True )
-    link = ndb.StringProperty( default="mta.io/#", required=True)
+    source = ndb.StringProperty( default="mta.io/#", required=True)
     # resource_type = ndb.KeyProperty()
-    resource_type = ndb.StringProperty( default="Text", required=True )
+    resource_type = ndb.StringProperty( default="TEXT", required=True )
     # rating = ndb.RatingProperty()
-    source_author = ndb.StringProperty()
-    source_date = ndb.DateProperty()
+    # source_author = ndb.StringProperty()
+    # source_date = ndb.DateProperty()
     # the user that added to this resource
     contributor = ndb.KeyProperty()
     date_created = ndb.DateProperty( auto_now_add=True )
     date_update = ndb.DateProperty( auto_now=True )
     # list of LaunchLists that this Resource belong to
     # only holds refrences, empty list by default
-    launch_list = ndb.KeyProperty( repeated=True )
+    launchlist = ndb.KeyProperty( repeated=True )
     # num_launch_list = ndb.IntegerProperty( default=0 )
     rating_smily = ndb.StringProperty()
+    # list of launchlist keys
+    launchlists = ndb.KeyProperty( repeated=True )
+    crawled = ndb.BooleanProperty()
 
 
 class AccountModel( ndb.Model ):
     first_name = ndb.StringProperty( default="Friedrich", required=True )
     last_name = ndb.StringProperty( default="Nietzsche", required=True )
-    profile_type = ndb.StringProperty( required=True )
+    # profile_type = ndb.StringProperty( required=True )
     # TODO: needs to be validated
     email = ndb.StringProperty( required=True )
     description = ndb.TextProperty( default="Iam the UberMentch!", required=True )
     # "A user with a Google account"
-    user = ndb.UserProperty( auto_current_user=True, auto_current_user_add=True, required=True )
+    user = ndb.UserProperty( auto_current_user=True, auto_current_user_add=True )
     date_created = ndb.DateProperty( auto_now_add=True )
     date_update = ndb.DateProperty( auto_now=True )
     # list of LaunchLists that this Account Created
     # only holds refrences, empty list by default
-    launch_list = ndb.KeyProperty( repeated=True )
+    launchlists = ndb.KeyProperty( repeated=True )
     # list of LaunchLists that this Account Created
     resources = ndb.KeyProperty( repeated=True )
 

@@ -13,7 +13,7 @@ BASE_API_URL = BASE_URL + BASE_API_URL;
  * Start the app
  */
 app.run( function() {
-    // TODO: remove loading screen
+    // TODO: add loading screen
 } );
 
 
@@ -26,7 +26,7 @@ app.service( "ajaxService", function( $http ) {
 
     return ({
 
-        sendForm : function( method, url, data, onSuccess, onFail ) {
+        request : function( method, url, data, onSuccess, onFail ) {
 
             if( onSuccess == null )
                 onSuccess = handleAJAXSuccess;
@@ -48,7 +48,7 @@ app.service( "ajaxService", function( $http ) {
         // TODO: add arg to change number topics requested, default is 9
         getTopics : function( onSuccess, onFail ) {
 
-            return this.sendForm(
+            return this.request(
                 "GET",
                 BASE_API_URL + "/topics",
                 "",
@@ -70,6 +70,19 @@ app.service( "ajaxService", function( $http ) {
             // });
             //
             // return request.then( onSuccess, onFail );
+
+        },
+
+        getTopic: function( topic_key, onSuccess, onFail ) {
+
+            return this.request(
+                "GET",
+                BASE_API_URL + "/topic/" +
+                topic_key,
+                "",
+                onSuccess,
+                onFail
+            );
 
         }
 
@@ -106,7 +119,7 @@ app.controller( "mainCtrlr", function( $scope, ajaxService ) {
         if( DEVELOPING )
             console.log( "addSubscriber", $scope.subscriber, $.param( $scope.subscriber ) );
 
-        ajaxService.sendForm(
+        ajaxService.request(
             "POST",
             "../api/subscribe",
             $.param( $scope.subscriber )
@@ -117,6 +130,30 @@ app.controller( "mainCtrlr", function( $scope, ajaxService ) {
     ajaxService.getTopics(
         $scope.displayFrontPageTopics
     );
+
+    $scope.topic = undefined;
+
+    function displayTopic( response ) {
+
+        if( DEVELOPING )
+            console.log( "displayTopic topic: ", response.data )
+
+        $scope.topic = response.data;
+
+    }
+
+    // TODO: let the user know, the request has been set, and that we are waiting
+    $scope.topicClicked = function( event, topic_key ) {
+
+        if( DEVELOPING )
+            console.log( "getTopic, key:", topic_key )
+
+        event.preventDefault();
+
+        ajaxService.getTopic( topic_key, displayTopic )
+
+    }
+
 
 });
 

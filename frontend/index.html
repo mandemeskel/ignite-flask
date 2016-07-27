@@ -10,11 +10,14 @@
 	<meta name="description" content="Ignition">
 	<meta name="author" content="Ignite">
 
+	<!-- TODO: use local files for dev purposes -->
 	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
 	<link rel="stylesheet" href="frontend/css/styles.css?v=1.0">
 
+	<!-- TODO: use local files for dev purposes -->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
 
+	<!-- TODO: use local files for dev purposes -->
 	<!-- <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script> -->
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.js"></script>
 
@@ -55,7 +58,7 @@
 					<span class="name" >{{ topic.name }}</span>
 
 					<!-- TODO: load topic page, update browser url -->
-					<a class="overlay" href="../api/topic/{{ topic.key }}" rel="next" ng-click=""></a>
+					<a class="overlay" href="../api/topic/{{ topic.name }}" rel="next" data-key="{{ topic.key }}" ng-click="topicClicked( $event, topic.key )"></a>
 
 				</div>
 
@@ -66,7 +69,7 @@
 
 
 		<!-- topic page -->
-		<div id="topic" class="row" ng-show="">
+		<div id="topic" class="row" ng-show="topic != undefined">
 
 			<div class="topic-wrapper col-xs-12">
 
