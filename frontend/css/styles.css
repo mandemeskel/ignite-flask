@@ -112,3 +112,130 @@ a.overlay {
     height: 100%;
     width: 100%;
 }
+
+
+/**  Body content section **/
+.section-wrapper {
+    position: relative;
+    margin-top: 10px;
+    width: 100%;
+    min-height: 69vh;
+}
+
+.section {
+    position: absolute;
+    background-color: #ccc;
+    margin: 0;
+    transition: 0.5s;
+    height: 100%;
+    width: 100%;
+    top: 0;
+}
+
+.section.ng-hide {
+    display: block !important;
+    transform: translateX( -100% );
+    z-index: 100;
+}
+
+.section.ng-hide:hover {
+    transform: translateX( -95% );
+}
+
+.section .section-title {
+    border-bottom: 4px solid white;
+}
+
+.section .section-description {
+    background-color: rgba( 0, 0, 0, 0.3);
+    padding: 5px;
+}
+
+.section ul.section-list {
+    list-style: none;
+}
+
+.section .section-list li {
+    position: relative;
+    overflow: hidden;
+    height: 50px;
+    transition: 0.5s;
+}
+
+.section .section-list li:hover {
+    overflow: visible;
+    height: 100px;
+}
+
+.section .section-list .section-checkbox {
+    display: inline-block;
+    width: 25px;
+    height: 25px;
+    background-color: transparent;
+    border: 4px solid black;
+}
+
+.section.ng-hide .back_btn {
+    display: block;
+}
+
+.section .back_btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 100%;
+    text-align: center;
+    font-size: 36px;
+    background-color: rgba( 255, 255, 255, 0.2 );
+    color: #9E9E9E;
+    display: none;
+    padding-top: 30%;
+    text-decoration: none !important;
+    transition: 0.5s;
+}
+
+.section .back_btn:hover {
+    width: 60px;
+}
+
+#topics {
+    background-color: rgb(219, 68, 55);
+    /*z-index: 100;*/
+}
+
+#topic {
+    background-color: rgb(0, 150, 136);
+    /*z-index: 90;*/
+}
+
+#topic .subtopic-description {
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    transition: 0.5s;
+}
+
+#topic .subtopic:hover .subtopic-description {
+    top: 25px;
+}
+
+#topic .subtopic-check {
+    width: 25px;
+    height: 25px;
+    position: absolute;
+    /* top: 0; */
+    background-color: transparent;
+    border: 4px solid black;
+    display: inline-block;
+}
+
+#topic .subtopic-name {
+    color: white;
+    font-size: 20px;
+    margin-bottom: 5px;
+    margin-left: 35px;
+    display: inline-block;
+    line-height: 26px;
+}

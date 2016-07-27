@@ -33,6 +33,7 @@
 
 	<div class="container-fluid">
 
+
 		<div id="header" class="row">
 
 			<div class="col-xs-6">
@@ -46,57 +47,68 @@
 		</div>
 
 
-		<!-- front page -->
-		<div id="topics" class="row">
+		<div class="section-wrapper">
 
-			<div class="topics-wrapper col-xs-12">
+			<!-- front page -->
+			<div id="topics" class="row section" ng-show="topics.show">
 
-				<div id="topic-{{ topic.name }}" class="topic" ng-repeat="topic in front_page_topics">
+				<div class="topics-wrapper col-xs-12">
 
-					<img class="icon" src="{{ topic.icon }}" alt="{{ topic.name }}"/>
+					<div id="topic-{{ topic.name }}" class="topic" ng-repeat="topic in topics.front_page_topics">
 
-					<span class="name" >{{ topic.name }}</span>
+						<img class="icon" src="{{ topic.icon }}" alt="{{ topic.name }}"/>
 
-					<!-- TODO: load topic page, update browser url -->
-					<a class="overlay" href="../api/topic/{{ topic.name }}" rel="next" data-key="{{ topic.key }}" ng-click="topicClicked( $event, topic.key )"></a>
+						<span class="name" >{{ topic.name }}</span>
+
+						<!-- TODO: load topic page, update browser url -->
+						<a class="overlay" href="../api/topic/{{ topic.name }}" rel="next" data-key="{{ topic.key }}" ng-click="topicClicked( $event, topic.key )"></a>
+
+					</div>
 
 				</div>
 
-			</div>
-
-		</div>
-		<!-- /front page -->
-
-
-		<!-- topic page -->
-		<div id="topic" class="row" ng-show="topic != undefined">
-
-			<div class="topic-wrapper col-xs-12">
-
-				<!-- NOTE: subtopics dont have their own icons, will use parent topic icons -->
-				<img class="topic-icon" href="{{ topic.icon }}"/>
-
-				<h2 class="topic-name">{{ topic.name }}</h2>
-
-				<p class="topic-description">{{ topic.description }}</p>
-
-				<ul class="topic-sub_topics">
-
-					<!-- TODO: add ratings stuff -->
-					<li id="sub_topic-{{ sub_topic.name }}" class="sub_topic" ng-repeat="sub_topic in topic.sub_topics">
-
-						<a class="sub_topic-link" href="/api/subtopic/{{ sub_topic.key }}" ng-click="">{{ sub_topic.name }}</a>
-
-						<p class="sub_topic-description">{{ sub_topic.description }}</p>
-
-					</li>
-
-				</ul>
+				<a class="back_btn" href="" ng-click="topics.toggle()">&GT</a>
 
 			</div>
+			<!-- /front page -->
+
+
+			<!-- topic page -->
+			<div id="topic" class="row section" ng-show="topic.show">
+
+				<div class="topic-wrapper col-xs-12">
+
+					<!-- NOTE: subtopics dont have their own icons, will use parent topic icons -->
+					<img class="topic-icon" href="{{ topic.topic.icon }}"/>
+
+					<h2 class="topic-name section-title">{{ topic.topic.name }}</h2>
+
+						<p class="topic-description section-description">{{ topic.topic.description }}</p>
+
+					<ul class="topic-subtopics section-list">
+
+						<!-- TODO: add ratings stuff -->
+						<li id="subtopic-{{ subtopic.name }}" class="subtopic" ng-repeat="subtopic in topic.topic.subtopics">
+
+							<span class="subtopic-check section-checkbox"></span>
+
+							<a class="subtopic-link subtopic-name" href="/api/subtopic/{{ subtopic.key }}" ng-click="">{{ subtopic.name }}</a>
+
+							<p class="subtopic-description">{{ subtopic.description }}</p>
+
+						</li>
+
+					</ul>
+
+				</div>
+
+				<a class="back_btn" href="" ng-click="topic.toggle()">&GT</a>
+
+			</div>
+			<!-- /topic page -->
 
 		</div>
-		<!-- /topic page -->
+		<!-- /content -->
 
 
 		<div id="footer" class="row">

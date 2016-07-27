@@ -35,7 +35,7 @@ def get_topics():
 
 		# TODO: move this logic to models.py
 		for topic in topics:
-			topic_dict = topic.to_dict( exclude=["sub_topics"] )
+			topic_dict = topic.to_dict( exclude=["subtopics"] )
 			topic_dict["key"] = topic.key.urlsafe()
 			result["topics"].append( topic_dict )
 

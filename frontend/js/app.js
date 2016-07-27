@@ -6,7 +6,7 @@ var app = angular.module( "ignite", [] ),
 if( !DEVELOPING )
     BASE_URL = "https://lnchlist.appspot.com";
 
-BASE_API_URL = BASE_URL + BASE_API_URL;
+// BASE_API_URL = BASE_URL + BASE_API_URL;
 
 
 /**
@@ -22,7 +22,7 @@ app.run( function() {
  * @param  {Object} $http   namesapce that allows access to Angular's ajax api
  * @return {Object}         a collection of functions that make unique calls to the server
  */
-app.service( "ajaxService", function( $http ) {
+app.service( "ajaxService", function( $http, $location ) {
 
     return ({
 
@@ -75,10 +75,14 @@ app.service( "ajaxService", function( $http ) {
 
         getTopic: function( topic_key, onSuccess, onFail ) {
 
+            var action = BASE_API_URL + "/topic/" + topic_key;
+
+            // update browser url to topic
+            $location.path( action );
+
             return this.request(
                 "GET",
-                BASE_API_URL + "/topic/" +
-                topic_key,
+                action,
                 "",
                 onSuccess,
                 onFail
@@ -92,20 +96,49 @@ app.service( "ajaxService", function( $http ) {
 
 
 // TODO: call server, get topics for front page
-app.controller( "mainCtrlr", function( $scope, ajaxService ) {
+app.controller( "mainCtrlr", function( $scope, $location, ajaxService ) {
 
-    $scope.front_page_topics = [];
+    function toggle( obj, path ) {
+        if( path == undefined )
+            path = "";
+        // hide other views
+        $scope.hideOtherSections( obj );
+        // toggle this view
+        obj.show = !obj.show;
+        // update url for back/forward btn
+        $location.path( path );
+        return obj.show;
+    }
 
-    $scope.displayFrontPageTopics = function( response ) {
+    $scope.topic = {
+        topic : undefined,
+        show : false,
+        toggle: function(){ toggle( this, "") }
+    };
+
+    $scope.topics = {
+        front_page_topics: [],
+        show: true,
+        toggle: function(){ toggle( this, "") }
+    }
+
+    $scope.hideOtherSections = function() {
+        $scope.topic.show = false;
+        $scope.topics.show = false;
+    }
+
+    function displayFrontPageTopics( response ) {
 
         var data = response.data;
 
         if( DEVELOPING )
             console.log( "success, response:", data );
 
-        if( data.status == true )
-            $scope.front_page_topics = data.topics;
-        else
+        if( data.status == true ) {
+            $scope.topics.show = true;
+            $scope.topics.front_page_topics = data.topics;
+            console.log( $scope.topics );
+        } else
             console.log( "no front page topics", data.msg );
 
     };
@@ -128,17 +161,17 @@ app.controller( "mainCtrlr", function( $scope, ajaxService ) {
     };
 
     ajaxService.getTopics(
-        $scope.displayFrontPageTopics
+        displayFrontPageTopics
     );
-
-    $scope.topic = undefined;
 
     function displayTopic( response ) {
 
         if( DEVELOPING )
             console.log( "displayTopic topic: ", response.data )
 
-        $scope.topic = response.data;
+        $scope.topic.topic = response.data;
+        $scope.topic.show = true;
+        $scope.topics.show = false;
 
     }
 

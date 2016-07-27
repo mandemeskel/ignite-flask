@@ -15,3 +15,15 @@ indexes:
   - name: display_front_page
   - name: num_sub_topics
     direction: desc
+
+- kind: TopicModel
+  properties:
+  - name: display_front_page
+  - name: num_subtopic
+    direction: desc
+
+- kind: TopicModel
+  properties:
+  - name: display_front_page
+  - name: num_subtopics
+    direction: desc

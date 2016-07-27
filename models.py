@@ -17,11 +17,11 @@ class TopicModel( ndb.Model ):
     icon = ndb.StringProperty( required=True )
     # display this topic on the front page?
     display_front_page = ndb.BooleanProperty( default=False )
-    # this is a list of sub_topic keys
-    sub_topics = ndb.KeyProperty( repeated=True )
-    num_sub_topics = ndb.IntegerProperty( default=0 )
+    # this is a list of subtopic keys
+    subtopics = ndb.KeyProperty( repeated=True )
+    num_subtopics = ndb.IntegerProperty( default=0 )
 
-    def update( self, name, description, icon, sub_topics ):
+    def update( self, name, description, icon, subtopics ):
         if name != None and name != self.name:
             self.name = name
 
@@ -31,39 +31,39 @@ class TopicModel( ndb.Model ):
         if icon != None and icon != self.icon:
             self.icon = icon
 
-        if sub_topics != None and sub_topics != self.sub_topics:
-            self.num_sub_topics = len( sub_topics )
-            self.sub_topics = sub_topics
+        if subtopics != None and subtopics != self.subtopics:
+            self.num_subtopics = len( subtopics )
+            self.subtopics = subtopics
 
         return self.put()
 
     # TODO: check if subtopic is already in topic
-    # def add_sub_topic( self, sub_topic ):
-    #     if not isinstance( sub_topic, ndb.KeyProperty ):
+    # def add_subtopic( self, subtopic ):
+    #     if not isinstance( subtopic, ndb.KeyProperty ):
     #         return False
     #
-    #     if not isinstance( get_document_by_id( sub_topic ) ):
+    #     if not isinstance( get_document_by_id( subtopic ) ):
     #         return False
     #
-    #     self.sub_topics.append( sub_topic )
-    #     self.num_sub_topics += 1
+    #     self.subtopics.append( subtopic )
+    #     self.num_subtopics += 1
     #
     #     return self.put()
-    def add_sub_topic( self, sub_topic ):
-        if not isinstance( sub_topic, SubTopicModel ):
+    def add_subtopic( self, subtopic ):
+        if not isinstance( subtopic, SubTopicModel ):
             return False
 
-        sub_topic.topics.append( self.key )
-        sub_topic_key = sub_topic.put()
-        self.sub_topics.append( sub_topic_key )
-        self.num_sub_topics += 1
+        subtopic.topics.append( self.key )
+        subtopic_key = subtopic.put()
+        self.subtopics.append( subtopic_key )
+        self.num_subtopics += 1
 
-        return sub_topic_key
+        return subtopic_key
 
     def json_encode( self ):
         return json.dumps( self.to_dict() )
 
-    def create_sub_topics( self, number = 4 ):
+    def create_subtopics( self, number = 4 ):
         # music_production = SubTopicModel(
         #     name = "Music Production",
         #     description = "Theory is a very useful tool, as it is a logic that makes sense of what sounds good in music and why. But what is theory even used for? How does it benefit you? As a beginner, it quickly enables music to make much more sense. As you practice composing and producing, it will open doors to more complicated, layer-driven forms of writing that connects your music to itself in various ways and makes it sound good and powerful.",
@@ -79,7 +79,7 @@ class TopicModel( ndb.Model ):
                 topics = [ self.key ],
                 num_topics = 1
             )
-            subtopic_keys.append( self.add_sub_topic( subtopic ) )
+            subtopic_keys.append( self.add_subtopic( subtopic ) )
             # subtopic.create_launchlists()
 
         self.put()
@@ -93,12 +93,12 @@ class TopicModel( ndb.Model ):
     # TODO: check for duplicates
     @classmethod
     def get_topics( cls, number_of_topics = 9, query_string = "" ):
-        query = cls.query( cls.display_front_page == True ).order( -cls.num_sub_topics )
+        query = cls.query( cls.display_front_page == True ).order( -cls.num_subtopics )
         topics = query.fetch( number_of_topics )
 
         if len( topics ) == 0:
             cls.create_topics()
-            query = cls.query( cls.display_front_page == True ).order( -cls.num_sub_topics )
+            query = cls.query( cls.display_front_page == True ).order( -cls.num_subtopics )
             topics = query.fetch( number_of_topics )
             # this recursion creates multiple copies of the topics
             # in the datastore because the datastore requires time
@@ -107,7 +107,7 @@ class TopicModel( ndb.Model ):
 
         return topics
 
-    def create_music_sub_topics( self ):
+    def create_music_subtopics( self ):
         # account
         nina = AccountModel(
             first_name = "Nina",
@@ -201,7 +201,7 @@ class TopicModel( ndb.Model ):
         # add sub-topic to user's profile
         nina.launchlists = [ music_production.key, music_theory.key ]
         # add sub-topic to topic
-        self.sub_topics = [ music_production.key ]
+        self.subtopics = [ music_production.key ]
         # update user with resources
         nina.resources = [
             music_theory1,
@@ -226,19 +226,19 @@ class TopicModel( ndb.Model ):
     def get_topic( cls, urlsafe_key ):
         topic_key = ndb.Key( urlsafe=urlsafe_key )
         topic = topic_key.get()
-        sub_topics = topic.sub_topics
+        subtopics = topic.subtopics
 
         # TODO: remove this when not debugging
-        if len( sub_topics ) == 0:
-            topic.create_sub_topics()
+        if len( subtopics ) == 0:
+            topic.create_subtopics()
             return False
         else:
-            for index, item in enumerate( sub_topics ):
-                sub_topic_key = sub_topics[ index ]
-                sub_topics[ index ] = SubTopicModel.get_dict( sub_topic_key );
+            for index, item in enumerate( subtopics ):
+                subtopic_key = subtopics[ index ]
+                subtopics[ index ] = SubTopicModel.get_dict( subtopic_key );
 
         topic_dict = topic.to_dict()
-        topic_dict[ "sub_topics" ] = sub_topics
+        topic_dict[ "subtopics" ] = subtopics
         topic_dict[ "key" ] = topic_key.urlsafe()
 
         return topic_dict
@@ -315,14 +315,14 @@ class SubTopicModel( ndb.Model ):
     num_launchlists = ndb.IntegerProperty( default=0 )
 
     # def get_dict( self ):
-    #     sub_topic_dict = self.to_dict();
+    #     subtopic_dict = self.to_dict();
 
     @classmethod
     def get_dict( cls, key ):
-        sub_topic = key.get()
-        sub_topic_dict = sub_topic.to_dict( exclude = ["topics", "launchlists"] )
-        sub_topic_dict["key"] = sub_topic.key.urlsafe()
-        return sub_topic_dict
+        subtopic = key.get()
+        subtopic_dict = subtopic.to_dict( exclude = ["topics", "launchlists"] )
+        subtopic_dict["key"] = subtopic.key.urlsafe()
+        return subtopic_dict
 
     # TODO: create batch add_launchlists function for effi
     # TODO: check if ll is already in subtopic
