@@ -49,8 +49,8 @@
 
 		<div class="section-wrapper">
 
-			<!-- front page -->
-			<div id="topics" class="row section" ng-show="topics.show">
+			<!-- front section -->
+			<section id="topics" class="row section" ng-show="topics.show">
 
 				<div class="topics-wrapper col-xs-12">
 
@@ -67,14 +67,14 @@
 
 				</div>
 
-				<a class="back_btn" href="" ng-click="topics.toggle()">&GT</a>
+				<a class="overlay back_btn" href="" ng-click="topics.toggle()"></a>
 
-			</div>
-			<!-- /front page -->
+			</section>
+			<!-- /front section -->
 
 
-			<!-- topic page -->
-			<div id="topic" class="row section" ng-show="topic.show">
+			<!-- topic section -->
+			<section id="topic" class="row section" ng-show="topic.show">
 
 				<div class="topic-wrapper col-xs-12">
 
@@ -90,7 +90,7 @@
 						<!-- TODO: add ratings stuff -->
 						<li id="subtopic-{{ subtopic.name }}" class="subtopic" ng-repeat="subtopic in topic.topic.subtopics">
 
-							<span class="subtopic-check section-checkbox"></span>
+							<span class="subtopic-check section-checkbox" ng-click="subtopicChecked( $event )"></span>
 
 							<a class="subtopic-link subtopic-name" href="/api/subtopic/{{ subtopic.key }}" ng-click="">{{ subtopic.name }}</a>
 
@@ -102,10 +102,10 @@
 
 				</div>
 
-				<a class="back_btn" href="" ng-click="topic.toggle()">&GT</a>
+				<a class="overlay back_btn" href="" ng-click="topic.toggle()"></a>
 
-			</div>
-			<!-- /topic page -->
+			</section>
+			<!-- /topic section -->
 
 		</div>
 		<!-- /content -->

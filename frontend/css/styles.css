@@ -6,6 +6,16 @@ body.minimalist {
     color: white;
 }
 
+a.overlay {
+    cursor: pointer;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 100;
+    height: 100%;
+    width: 100%;
+}
+
 #header {
     padding-top: 5px;
 }
@@ -103,23 +113,13 @@ body.minimalist {
     color: black;
 }
 
-a.overlay {
-    cursor: pointer;
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 100;
-    height: 100%;
-    width: 100%;
-}
-
 
 /**  Body content section **/
 .section-wrapper {
     position: relative;
     margin-top: 10px;
     width: 100%;
-    min-height: 69vh;
+    min-height: 75vh;
 }
 
 .section {
@@ -158,13 +158,14 @@ a.overlay {
 .section .section-list li {
     position: relative;
     overflow: hidden;
-    height: 50px;
+    /*height: 50px;*/
+    margin-bottom: 5px;
     transition: 0.5s;
 }
 
 .section .section-list li:hover {
     overflow: visible;
-    height: 100px;
+    /*height: 100px;*/
 }
 
 .section .section-list .section-checkbox {
@@ -180,24 +181,24 @@ a.overlay {
 }
 
 .section .back_btn {
-    position: absolute;
+    /*position: absolute;
     top: 0;
     right: 0;
     width: 20px;
     height: 100%;
     text-align: center;
     font-size: 36px;
-    background-color: rgba( 255, 255, 255, 0.2 );
     color: #9E9E9E;
-    display: none;
     padding-top: 30%;
     text-decoration: none !important;
-    transition: 0.5s;
+    transition: 0.5s;*/
+    display: none;
+    background-color: rgba(255,255,255,0.25);
 }
 
-.section .back_btn:hover {
+/*.section .back_btn:hover {
     width: 60px;
-}
+}*/
 
 #topics {
     background-color: rgb(219, 68, 55);
@@ -211,14 +212,22 @@ a.overlay {
 
 #topic .subtopic-description {
     position: absolute;
-    top: -100%;
+    top: 30px;
     left: 0;
     width: 100%;
     transition: 0.5s;
+    z-index: 1000;
+    /* display: none; */
+    background-color: black;
+    padding: 5px;
+    opacity: 0;
+    transition: 0.5s;
+    pointer-events: none;
 }
 
 #topic .subtopic:hover .subtopic-description {
-    top: 25px;
+    /*display: block;*/
+    opacity: 0.85;
 }
 
 #topic .subtopic-check {
@@ -229,6 +238,14 @@ a.overlay {
     background-color: transparent;
     border: 4px solid black;
     display: inline-block;
+    transition: 0.5s;
+}
+
+#topic .subtopic-check:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+#topic .subtopic-check.clicked {
+    background-color: black;
 }
 
 #topic .subtopic-name {

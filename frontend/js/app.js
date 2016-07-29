@@ -14,6 +14,7 @@ if( !DEVELOPING )
  */
 app.run( function() {
     // TODO: add loading screen
+
 } );
 
 
@@ -55,21 +56,6 @@ app.service( "ajaxService", function( $http, $location ) {
                 onSuccess,
                 onFail
             )
-
-            // if( onSuccess == null )
-            //     onSuccess = handleAJAXSuccess;
-            //
-            // if( onFail == null )
-            //     onFail = handleAJAXFail;
-            //
-            // var request = $http({
-            //     method: "GET",
-            //     url: BASE_API_URL + "/topics",
-            //     data: ""
-            //     // headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-            // });
-            //
-            // return request.then( onSuccess, onFail );
 
         },
 
@@ -184,6 +170,15 @@ app.controller( "mainCtrlr", function( $scope, $location, ajaxService ) {
         event.preventDefault();
 
         ajaxService.getTopic( topic_key, displayTopic )
+
+    };
+
+    $scope.subtopicChecked = function( event ) {
+
+        if( $( event.target ).hasClass( "clicked" ) )
+            $( event.target ).removeClass( "clicked" );
+        else
+            $( event.target ).addClass( "clicked" );
 
     }
 
