@@ -10,6 +10,12 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: Topic
+  properties:
+  - name: display_front_page
+  - name: num_launchlists
+    direction: desc
+
 - kind: TopicModel
   properties:
   - name: display_front_page

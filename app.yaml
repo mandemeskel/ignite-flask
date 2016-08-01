@@ -22,6 +22,24 @@ handlers:
 - url: /api/.*
   script: api.app
 
+- url: /topic
+  script: topic_model.app
+
+- url: /topic/.*
+  script: topic_model.app
+
+- url: /topics
+  script: topic_model.app
+
+- url: /topics/.*
+  script: topic_model.app
+
+- url: /test
+  script: rest_model.app
+
+- url: /test/.*
+  script: rest_model.app
+
 # This handler tells app engine how to route requests to a WSGI application.
 # The script value is in the format <path.to.module>.<wsgi_application>
 # where <wsgi_application> is a WSGI application object.
