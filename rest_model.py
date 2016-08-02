@@ -1,6 +1,5 @@
 # the basics
 import logging
-import json
 from datetime import date
 
 # Google stuff
@@ -21,7 +20,7 @@ DEVELOPING = True
 
 
 
-class RESPONSE_STATUS(): 
+class RESPONSE_STATUS():
     failed = False
     success = True
     retry = "retry"
@@ -31,7 +30,7 @@ class RESPONSE_STATUS():
 # TODO: needed?
 def check_key( urlsafe_key, cls, return_model = False ):
     model = ndb.Key( urlsafe = urlsafe_key ).get()
-    
+
     # make sure we are editing the right type of model
     if not isinstance( model, cls ):
         return False
@@ -56,7 +55,7 @@ class RestModel( ndb.Model ):
     OBJECT_PROPS = [ "contributors", "date_created", "last_update" ]
 
 
-    # Checks to see if key is an actual entity key 
+    # Checks to see if key is an actual entity key
     @classmethod
     def check_key( cls, urlsafe_key, return_model = False ):
         model = ndb.Key( urlsafe = urlsafe_key ).get()
@@ -72,6 +71,24 @@ class RestModel( ndb.Model ):
             return model
 
         return True
+
+
+    # Converts a list of model keys into the model's dicts
+    @classmethod
+    def convert_keys_to_dicts( cls, keys, includes=None, excludes=None ):
+        dicts = []
+
+        if keys == [] or keys == None:
+            return dicts
+
+        if includes != None:
+            for key in keys:
+                dicts.append( key.get().to_dict( includes=includes, excludes=excludes ) )
+        else:
+            for key in keys:
+                dicts.append( key.get().to_dict( excludes=excludes ) )
+
+        return dicts
 
 
     # Convert dict to model
@@ -120,7 +137,7 @@ class RestModel( ndb.Model ):
 
             elif isinstance( a_obj, date ):
                 # TODO: add total secounds since 1972 for comparison, frontend it?
-                dct[ prop ] = { 
+                dct[ prop ] = {
                     "year": a_obj.year,
                     "month": a_obj.month,
                     "day": a_obj.day
@@ -140,7 +157,7 @@ class RestModel( ndb.Model ):
     # returns the model
     @classmethod
     def create( cls, data ):
-        model = cls( 
+        model = cls(
             name=data[ "name" ],
             description=data.get( "description", "" ),
             contributors=data.get( "contributors", [] )
@@ -150,7 +167,7 @@ class RestModel( ndb.Model ):
             model.put()
         except Exception, e:
             return False
-        
+
         return model.key.urlsafe()
 
 
@@ -173,7 +190,7 @@ class RestModel( ndb.Model ):
             return False
         else:
             return True
-            
+
 
     # Updates the model with the data passed
     # returns boolean depedent on the success of the update
@@ -181,7 +198,7 @@ class RestModel( ndb.Model ):
         model_name = data.get( "name", self.name )
         model_descr = data.get( "description", self.description )
         contributors = data.get( "contributors", self.contributors )
-        
+
         if model_name != self.name:
             self.name = model_name
 
@@ -199,7 +216,7 @@ class RestModel( ndb.Model ):
             return self.key.urlsafe()
 
 
-    # Checks to see if model is in the passed list 
+    # Checks to see if model is in the passed list
     def is_in_list( self, a_list ):
         return ( self in a_list )
 
@@ -224,7 +241,7 @@ class RestApi( Resource ):
 
         if model.delete() is False:
             return { "status":  False }, 500
-        
+
         return { "status": True }
 
 
@@ -287,9 +304,7 @@ class RestApi( Resource ):
 
 
 # requests that will be routed to the RestModel class
-api.add_resource( RestApi, 
+api.add_resource( RestApi,
     "/test/<urlsafe_key>",
-    "/test" 
+    "/test"
 )
-
-

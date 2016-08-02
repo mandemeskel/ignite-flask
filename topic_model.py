@@ -1,6 +1,5 @@
 # the basics
 import logging
-import json
 
 # Google stuff
 from google.appengine.ext import ndb
@@ -45,10 +44,10 @@ class Topic( RestModel ):
 
     # Returns a list of Topics with display_front_page=True
     # @classmethod
-    # def get_front_page_topics( cls, num_topics=3, 
+    # def get_front_page_topics( cls, num_topics=3,
     #     excludes=[ "launchlists", "display_front_page" ] ):
     #     return
-    
+
 
     # Creates an instance of the class and saves to database
     # returns the model
@@ -70,7 +69,7 @@ class Topic( RestModel ):
         if DEVELOPING:
             logging.log( logging.INFO, data )
 
-        topic = cls( 
+        topic = cls(
             name=data[ "name" ],
             description=data[ "description" ],
             icon=data[ "icon" ],
@@ -99,9 +98,9 @@ class Topic( RestModel ):
         description = '"Happiness today is just a song away, just a song\nI love your music, baby" \n- Just Like Music, Erick Sermon feat. Marvin Gaye'
         icon = "../icons/apple_music_icon_trns.png"
         display_front_page = True
-       
+
         for name in names:
-            topic = cls.create( { 
+            topic = cls.create( {
                 "name": name,
                 "description": description,
                 "icon": icon,
@@ -170,25 +169,25 @@ class Topic( RestModel ):
             self.launchlists.remove( launchlist.key )
             self.num_launchlists -= 1
             return True
-        
+
         return False
 
 
     # Turns model into json encodable dict
-    def to_dict( self, includes=None, excludes=None ):        
+    def to_dict( self, includes=None, excludes=None ):
         # if DEVELOPING:
         #     logging.log( logging.INFO, type( self ) )
 
         if includes is not None:
-            dct = super( Topic, self ).to_dict( 
-                    object_props=Topic.OBJECT_PROPS, 
-                    includes=includes, 
-                    excludes=excludes 
+            dct = super( Topic, self ).to_dict(
+                    object_props=Topic.OBJECT_PROPS,
+                    includes=includes,
+                    excludes=excludes
                 )
         else:
-            dct = super( Topic, self ).to_dict( 
-                    object_props=Topic.OBJECT_PROPS, 
-                    excludes=excludes 
+            dct = super( Topic, self ).to_dict(
+                    object_props=Topic.OBJECT_PROPS,
+                    excludes=excludes
                 )
         return dct
 
@@ -201,7 +200,7 @@ class Topic( RestModel ):
         method of this Topic?
     '''
     # TODO: validate passed data
-    # Update this Topics data and return the Topic 
+    # Update this Topics data and return the Topic
     def update( self, data ):
         model_dict = self.to_dict();
         for prop in data.keys():
@@ -210,7 +209,7 @@ class Topic( RestModel ):
             if data[ prop ] == model_dict[ prop ]:
                 continue
             model_dict[ prop ] == data[ prop ]
-        
+
         # TODO: create dict_to_model?
         model = Topic.dict_to_model( model_dict )
         try:
@@ -234,7 +233,7 @@ class TopicApi( RestApi ):
         # if list_urlsafe_key != None:
         #     topic = cls.model_class.check_key( topic_ulrsafe_key, return_model=True )
         #     result = cls.model_class.remove_launchlist( list_urlsafe_key )
-            
+
         #     if result:
         #         return { "status": False, "msg": "failed to remove launchlist" }, 500
 
@@ -243,6 +242,32 @@ class TopicApi( RestApi ):
         #     return super( TopicApi, cls ).delete( topic_ulrsafe_key )
 
         return { "status": False, "msg": "no perms" }, 403
+
+
+    # Gets all the Topic in its entirety
+    @classmethod
+    def get( cls, urlsafe_key ):
+        data = request.form
+
+        if DEVELOPING:
+            logging.log( logging.INFO, data )
+
+        topic = cls.model_class.check_key( urlsafe_key, return_model = True )
+
+        if topic is False:
+            return { "status": False }, 400
+
+        topic_dict = topic.to_dict( excludes=[ "contributors", "launchlists" ] )
+
+        launchlists = cls.model_class.convert_keys_to_dicts( model.launchlists, includes=[ "name", "rating", "author", "last_update", "num_resoruces" ] )
+
+        contributors = cls.model_class.convert_keys_to_dicts( model.contributors, includes=[ "name", "author", "last_update" ] )
+
+        topic_dict[ "launchlists" ] = launchlists
+        topic_dict[ "contributors" ] = contributors
+
+        return { "status": True, "topic": topic_dict }, 200
+
 
 
     # Updates the topic with the data passed
@@ -272,7 +297,7 @@ class TopicsApi( RestApi ):
 
         # NOTE: not python 3.x friendly
         if excludes != [] and isinstance( excludes, basestring ):
-            excludes = excludes.split( "," )     
+            excludes = excludes.split( "," )
 
         if DEVELOPING:
             logging.log( logging.INFO, type( includes ) )
@@ -295,10 +320,10 @@ class TopicsApi( RestApi ):
         #     logging.log( logging.INFO, num )
 
         if ajax:
-            topics = cls.model_class.get_topics( 
-                num_topics=num, 
-                includes=includes, 
-                excludes=excludes 
+            topics = cls.model_class.get_topics(
+                num_topics=num,
+                includes=includes,
+                excludes=excludes
             )
 
             if topics is False:
@@ -320,10 +345,10 @@ api.add_resource( TopicApi,
 )
 
 # TODO: remove includes and excludes url params
-api.add_resource( TopicsApi, 
+api.add_resource( TopicsApi,
     "/topics/<ajax>/<num>/<includes>/<excludes>",
     "/topics/<ajax>/<num>/<includes>",
     "/topics/<ajax>/<num>",
     "/topics/<ajax>",
-    "/topics" 
+    "/topics"
 )
