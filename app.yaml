@@ -22,6 +22,9 @@ handlers:
 - url: /api/.*
   script: api.app
 
+- url: /app/.*
+  script: app.app
+
 - url: /topic
   script: topic_model.app
 
@@ -61,3 +64,9 @@ handlers:
 #libraries:
 #- name: jinja2
 #  version: latest
+
+
+# Files that we don't want appengine to track
+skip_files:
+- ^\.idea$
+- ^\.git$

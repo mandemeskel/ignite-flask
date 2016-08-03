@@ -2,17 +2,19 @@
 import logging
 
 # Google stuff
+# noinspection PyUnresolvedReferences
 from google.appengine.ext import ndb
 
 # Import the Flask Framework
 from flask import Flask, render_template, request, Response
+# noinspection PyUnresolvedReferences
 from flask_restful import Resource, Api
 
 # Import to allow crossdomain requests
 from crossdomain import crossdomain
 
 # Our stuff
-from rest_model import RestApi, RestModel, RESPONSE_STATUS
+from rest_model import RestApi, RestApis, RestModel, RESPONSE_STATUS
 
 app = Flask( __name__ )
 api = Api( app )
@@ -24,23 +26,21 @@ DEVELOPING = True
 
 class Topic( RestModel ):
 
-    # TODO: do not allow multiline names
-    # inherited from RestModel
-    # name = ndb.StringProperty( default="Psuedoscience", required=True )
-    # description = ndb.TextProperty( default="It's real!!!" )
-    # contributors = ndb.KeyProperty( repeated=True )
-    # date_created = ndb.DateProperty( auto_now_add=True )
-    # last_update = ndb.DateProperty( auto_now=True )
-    icon = ndb.StringProperty( required=True )
     # display this topic on the front page?
     display_front_page = ndb.BooleanProperty( default=False )
     # this is a list of launchlists keys
     launchlists = ndb.KeyProperty( repeated=True )
     num_launchlists = ndb.IntegerProperty( default=0 )
+
+    # constants
     REQUIRED_PROPERTIES = [ "name", "description", "icon" ]
     OTHER_PROPERTIES = [ "display_front_page", "launchlists", "num_launchlists" ]
     OBJECT_PROPS = RestModel.OBJECT_PROPS
     OBJECT_PROPS.append( "launchlists" )
+    EXCLUDES = RestModel.EXCLUDES
+    EXCLUDES.extend( [
+        "launchlists"
+    ] )
 
     # Returns a list of Topics with display_front_page=True
     # @classmethod
@@ -117,9 +117,10 @@ class Topic( RestModel ):
 
     # Returns a list of topics ordered by number of launchlists they contain
     @classmethod
-    def get_topics( cls, num_topics=3, includes=[], excludes=[] ):
+    def get_topics( cls, num_topics=3, includes=None, excludes=None ):
         # TODO: make query an dynamic i.e. an arg
-        query = cls.query( cls.display_front_page == True ).order( -cls.num_launchlists )
+        query = cls.query( cls.display_front_page == True ).order(
+            -cls.num_launchlists )
 
         # search for topics matching our query params
         try:
@@ -138,18 +139,31 @@ class Topic( RestModel ):
         # convert all topics into dicts
         topics_dict = []
         for topic in topics:
-            topics_dict.append( topic.to_dict( includes=includes, excludes=excludes ) )
+            topics_dict.append(
+                topic.to_dict(
+                includes=includes,
+                excludes=excludes )
+            )
 
         return topics_dict
 
 
     # Adds launchlist to Topic
-    def add_launchlist( self, launchlist_urlsafe_key ):
-        launchlist = cls.check_key( launchlist_urlsafe_key, return_model=True )
+    def add_launchlist( self, launchlist_urlsafe_key="", launchlist=None ):
+
+        if launchlist_urlsafe_key != "" and launchlist is None:
+            launchlist = self.check_key(
+                launchlist_urlsafe_key,
+                return_model=True
+            )
+        elif launchlist is None:
+            return False
+
         if launchlist.key not in self.launchlists:
+            # update topic
             self.launchlists.append( launchlist.key )
             self.num_launchlists += 1
-            return True
+
         return False
 
 
@@ -161,7 +175,7 @@ class Topic( RestModel ):
     # Removes launchlist from Topic
     def remove_launchlist( self, launchlist_urlsafe_key ):
         # TODO: create method to transform websafe_key to regular key
-        launchlist = cls.check_key( launchlist_urlsafe_key, return_model=True )
+        launchlist = self.check_key( launchlist_urlsafe_key, return_model=True )
 
         if self.num_launchlists == 0:
             return False
@@ -223,10 +237,10 @@ class Topic( RestModel ):
 
 
 
+# TODO: needs auth to delete, post, and put
 class TopicApi( RestApi ):
     model_class = Topic
 
-    # TODO: needs auth to delete
     # Handles all behaviour that removes data from this Topic
     @classmethod
     def delete( cls, topic_ulrsafe_key, list_urlsafe_key=None ):
@@ -257,17 +271,24 @@ class TopicApi( RestApi ):
         if topic is False:
             return { "status": False }, 400
 
-        topic_dict = topic.to_dict( excludes=[ "contributors", "launchlists" ] )
+        topic_dict = topic.to_dict( excludes=topic.EXCLUDES )
 
-        launchlists = cls.model_class.convert_keys_to_dicts( model.launchlists, includes=[ "name", "rating", "author", "last_update", "num_resoruces" ] )
-
-        contributors = cls.model_class.convert_keys_to_dicts( model.contributors, includes=[ "name", "author", "last_update" ] )
-
-        topic_dict[ "launchlists" ] = launchlists
-        topic_dict[ "contributors" ] = contributors
+        # NOTE: don't send lists with model, request for lists specifically
+        # launchlists = cls.model_class.convert_keys_to_dicts(
+        #     topic.launchlists,
+        #     includes=[ "name", "rating", "author",
+        #                "last_update", "num_resoruces" ]
+        # )
+        #
+        # contributors = cls.model_class.convert_keys_to_dicts(
+        #     topic.contributors,
+        #     includes=[ "name", "author", "last_update" ]
+        # )
+        #
+        # topic_dict[ "launchlists" ] = launchlists
+        # topic_dict[ "contributors" ] = contributors
 
         return { "status": True, "topic": topic_dict }, 200
-
 
 
     # Updates the topic with the data passed
@@ -283,30 +304,35 @@ class TopicApi( RestApi ):
 
 
 
-class TopicsApi( RestApi ):
+class TopicsApi( RestApis ):
     model_class = Topic
 
     # TODO: validate data
     # TODO: remove includes and excludes params
     # gets multiple topics
     @classmethod
-    def get( cls, ajax=False, num=3, includes=[], excludes=[] ):
-        # NOTE: not python 3.x friendly
-        if includes != [] and isinstance( includes, basestring ):
-            includes = includes.split( "," )
-
-        # NOTE: not python 3.x friendly
-        if excludes != [] and isinstance( excludes, basestring ):
-            excludes = excludes.split( "," )
+    def get( cls, ajax=False, num=3 ):
+        data = request.args
 
         if DEVELOPING:
-            logging.log( logging.INFO, type( includes ) )
-            logging.log( logging.INFO, type( excludes ) )
+            logging.log( logging.INFO, data )
+
+        # # NOTE: not python 3.x friendly
+        # if includes != [] and isinstance( includes, basestring ):
+        #     includes = includes.split( "," )
+        #
+        # # NOTE: not python 3.x friendly
+        # if excludes != [] and isinstance( excludes, basestring ):
+        #     excludes = excludes.split( "," )
+        #
+        # if DEVELOPING:
+        #     logging.log( logging.INFO, type( includes ) )
+        #     logging.log( logging.INFO, type( excludes ) )
 
         # send only the neccassary info by default
-        if excludes == []:
-            excludes = cls.model_class.OBJECT_PROPS
-            excludes.extend( [ "display_front_page", "num_launchlists" ] )
+        # if excludes == []:
+        #     excludes = cls.model_class.OBJECT_PROPS
+        #     excludes.extend( [ "display_front_page", "num_launchlists" ] )
 
         # NOTE: not python 3.x friendly, should be isinstance( num, str )
         if isinstance( num, basestring ):
@@ -319,11 +345,11 @@ class TopicsApi( RestApi ):
         # if DEVELOPING:
         #     logging.log( logging.INFO, num )
 
+        # TODO: this is always True because ajax's value is passed as a string
         if ajax:
             topics = cls.model_class.get_topics(
                 num_topics=num,
-                includes=includes,
-                excludes=excludes
+                includes=[ "name", "icon" ]
             )
 
             if topics is False:
@@ -344,11 +370,11 @@ api.add_resource( TopicApi,
     "/topic"
 )
 
+# NOTE: there is no default boolean converter
+# NOTE: http://werkzeug.pocoo.org/docs/0.11/routing/
 # TODO: remove includes and excludes url params
 api.add_resource( TopicsApi,
-    "/topics/<ajax>/<num>/<includes>/<excludes>",
-    "/topics/<ajax>/<num>/<includes>",
-    "/topics/<ajax>/<num>",
+    "/topics/<ajax>/<int:num>",
     "/topics/<ajax>",
     "/topics"
 )

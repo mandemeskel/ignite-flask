@@ -3,3 +3,6 @@
 !lib/README.md
 .DS_Store
 /*.txt
+.idea/*
+.idea/dictionaries/Work.xml
+junk.py

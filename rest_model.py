@@ -3,10 +3,13 @@ import logging
 from datetime import date
 
 # Google stuff
+# noinspection PyUnresolvedReferences
 from google.appengine.ext import ndb
 
 # Import the Flask Framework
+# noinspection PyUnresolvedReferences
 from flask import Flask, render_template, request, Response
+# noinspection PyUnresolvedReferences
 from flask_restful import Resource, Api
 
 # Import to allow crossdomain requests
@@ -47,22 +50,59 @@ def check_key( urlsafe_key, cls, return_model = False ):
 
 class RestModel( ndb.Model ):
 
-    name = ndb.StringProperty( default="Psuedoscience", required=True )
-    description = ndb.TextProperty( default="It's real!!!" )
+    # model properties
+    # TODO: do not allow multiline names
+    name = ndb.StringProperty(
+        default="Jane Doe", required=True )
+    description = ndb.TextProperty(
+        default="Job description: rocket jumper!" )
+    # NOTE: should use BolbKeyProperty to store icons?
+    # NOTE: but if imgs are hosted elsewhere then a string works
+    icon = ndb.StringProperty(
+        default="../icons/apple_music_icon_trns.png",
+        required=True )
+
+    # search realted properties
+    tags = ndb.KeyProperty( repeated=True )
+    num_tags = ndb.IntegerProperty( default=0 )
+
+    # user related properties
+    # TODO: use kind argument to force list to have a specific model subclass, string or model subclass works
+    creators = ndb.KeyProperty( repeated=True )
+    num_creators = ndb.IntegerProperty( default=0 )
+    admins = ndb.KeyProperty( repeated=True )
+    num_admins = ndb.IntegerProperty( default=0 )
     contributors = ndb.KeyProperty( repeated=True )
+    num_contributors = ndb.IntegerProperty( default=0 )
+    editors = ndb.KeyProperty( repeated=True )
+    num_editors = ndb.IntegerProperty( default=0 )
+
+    # auto-properties
     date_created = ndb.DateProperty( auto_now_add=True )
     last_update = ndb.DateProperty( auto_now=True )
-    OBJECT_PROPS = [ "contributors", "date_created", "last_update" ]
+
+    # constants
+    OBJECT_PROPS = [ "date_created", "last_update" ]
+    # List of properties we don't want to send with get request
+    # for this model, usually due to their size
+    EXCLUDES = [
+        "tags", "creators", "admins",
+        "contributors", "editors"
+    ]
 
 
     # Checks to see if key is an actual entity key
     @classmethod
-    def check_key( cls, urlsafe_key, return_model = False ):
+    def check_key( cls,
+                   urlsafe_key,
+                   return_model = False,
+                   check_model_type = True ):
         model = ndb.Key( urlsafe = urlsafe_key ).get()
 
         # make sure we are editing the right type of model
-        if not isinstance( model, cls ):
-            return False
+        if check_model_type:
+            if not isinstance( model, cls ):
+                return False
 
         if return_model:
             if model is None:
@@ -75,7 +115,10 @@ class RestModel( ndb.Model ):
 
     # Converts a list of model keys into the model's dicts
     @classmethod
-    def convert_keys_to_dicts( cls, keys, includes=None, excludes=None ):
+    def convert_keys_to_dicts( cls,
+                               keys,
+                               includes=None,
+                               excludes=None ):
         dicts = []
 
         if keys == [] or keys == None:
@@ -83,10 +126,15 @@ class RestModel( ndb.Model ):
 
         if includes != None:
             for key in keys:
-                dicts.append( key.get().to_dict( includes=includes, excludes=excludes ) )
+                dicts.append( key.get().to_dict(
+                    includes=includes,
+                    excludes=excludes
+                ) )
         else:
             for key in keys:
-                dicts.append( key.get().to_dict( excludes=excludes ) )
+                dicts.append( key.get().to_dict(
+                    excludes=excludes
+                ) )
 
         return dicts
 
@@ -97,20 +145,56 @@ class RestModel( ndb.Model ):
         pass
 
 
-    # Turns model into json encodable dict
-    def to_dict( self, object_props=[], includes=[], excludes=[] ):
-        if includes != []:
-            dct = super( RestModel, self ).to_dict( include=includes, exclude=excludes )
+    # Edit list of model keys, but it can be any type
+    @classmethod
+    def edit_list( cls, a_list, key, add=True ):
+        try:
+            # look for key in list
+            index = a_list.index( key )
+        except ValueError:
+            # can't delete a key that isn't in the list
+            if add is False:
+                return False
+            # add key to list
+            else:
+                a_list.append( key )
+                return a_list
         else:
-            dct = super( RestModel, self ).to_dict( exclude=excludes )
+            # remove key from list
+            if add is False:
+                if len( a_list ) == 0:
+                    return False
+                a_list.pop( index )
+                return a_list
+            # key is already in list, do nothing
+            else:
+                return False
 
-        if object_props == []:
+
+    # Turns model into json encodable dict
+    def to_dict( self,
+                 object_props=None,
+                 includes=None,
+                 excludes=None ):
+        if includes != [] or includes is not None:
+            dct = super( RestModel, self ).to_dict(
+                include=includes,
+                exclude=excludes
+            )
+        else:
+            dct = super( RestModel, self ).to_dict(
+                exclude=excludes
+            )
+
+        if object_props is None:
             object_props = dct.keys()
         # if all the key lists are excluded from the model's dict
         # then we don't need to do anything
         elif object_props == excludes:
             # added this in two places for optimization, one less key/value to look up
             # by default to_dict does not include the model's key
+            if self.key is None:
+                self.put()
             dct[ "key" ] = self.key.urlsafe()
             return dct
 
@@ -125,7 +209,7 @@ class RestModel( ndb.Model ):
                 if a_obj == []:
                     continue
 
-                if not isinstance( a_list[0], ndb.KeyProperty ):
+                if not isinstance( a_obj[0], ndb.KeyProperty ):
                     continue
 
                 urlsafe_keys = []
@@ -136,7 +220,7 @@ class RestModel( ndb.Model ):
                 dct[ prop ] = urlsafe_keys
 
             elif isinstance( a_obj, date ):
-                # TODO: add total secounds since 1972 for comparison, frontend it?
+                # TODO: add total seconds since 1972 for comparison, frontend it?
                 dct[ prop ] = {
                     "year": a_obj.year,
                     "month": a_obj.month,
@@ -148,6 +232,8 @@ class RestModel( ndb.Model ):
 
         # added this in two places for optimization, one less key/value to look up
         # by default to_dict does not include the model's key
+        if self.key is None:
+            self.put()
         dct[ "key" ] = self.key.urlsafe()
 
         return dct
@@ -159,8 +245,7 @@ class RestModel( ndb.Model ):
     def create( cls, data ):
         model = cls(
             name=data[ "name" ],
-            description=data.get( "description", "" ),
-            contributors=data.get( "contributors", [] )
+            description=data.get( "description", "" )
         )
 
         try:
@@ -258,7 +343,7 @@ class RestApi( Resource ):
         if model is False:
             return { "status": False }, 400
 
-        model_dict = model.to_dict()
+        model_dict = model.to_dict( excludes=model.EXCLUDES )
         return { "status": True, "model": model_dict }
 
 
@@ -300,6 +385,35 @@ class RestApi( Resource ):
             return { "status": False }, 500
         else:
             return { "status": True, "key": urlsafe_key }, 201
+
+
+
+class RestApis( Resource ):
+
+    model_class = RestModel
+
+    # Deletes the models from database
+    @classmethod
+    def delete( cls, urlsafe_key="" ):
+        return { "status": False, "msg": "no perms" }, 403
+
+
+    # Gets the models from database
+    @classmethod
+    def get( cls, urlsafe_key="" ):
+        return { "status": False, "msg": "no perms" }, 403
+
+
+    # Updates the models from database
+    @classmethod
+    def post( cls, urlsafe_key="" ):
+        return { "status": False, "msg": "no perms" }, 403
+
+
+    # Creates the models from database
+    @classmethod
+    def put( cls, urlsafe_key="" ):
+        return { "status": False, "msg": "no perms" }, 403
 
 
 

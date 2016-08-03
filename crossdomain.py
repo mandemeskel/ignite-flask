@@ -15,6 +15,7 @@
             return jsonify(foo='cross domain ftw')
 '''
 from datetime import timedelta
+# noinspection PyUnresolvedReferences
 from flask import make_response, request, current_app
 from functools import update_wrapper
 

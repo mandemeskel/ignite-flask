@@ -9,10 +9,11 @@ import json
 from models import TopicModel, SubscriberModel
 
 # Google APIs
-from google.appengine.api import search
-from google.appengine.api import mail
+# noinspection PyUnresolvedReferences
+from google.appengine.api import search, mail
 
 # Import the Flask Framework
+# noinspection PyUnresolvedReferences
 from flask import Flask, render_template, request, Response
 
 # Import library to allow crossdomain requests
