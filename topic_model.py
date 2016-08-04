@@ -15,6 +15,7 @@ from crossdomain import crossdomain
 
 # Our stuff
 from rest_model import RestApi, RestApis, RestModel, RESPONSE_STATUS
+from launchlist_model import LaunchList
 
 app = Flask( __name__ )
 api = Api( app )
@@ -24,17 +25,23 @@ DEVELOPING = True
 
 
 
+class POST_KEYWORDS:
+    remove_launchlists = "remove_launchlists"
+    add_launchlists = "add_launchlists"
+
+
+
 class Topic( RestModel ):
 
     # display this topic on the front page?
     display_front_page = ndb.BooleanProperty( default=False )
     # this is a list of launchlists keys
-    launchlists = ndb.KeyProperty( repeated=True )
-    num_launchlists = ndb.IntegerProperty( default=0 )
+    launchlists = ndb.KeyProperty( repeated=True,  kind=LaunchList )
+    num_launchlists = ndb.ComputedProperty(
+        lambda self: len( self.launchlists ) )
 
     # constants
     REQUIRED_PROPERTIES = [ "name", "description", "icon" ]
-    OTHER_PROPERTIES = [ "display_front_page", "launchlists", "num_launchlists" ]
     OBJECT_PROPS = RestModel.OBJECT_PROPS
     OBJECT_PROPS.append( "launchlists" )
     EXCLUDES = RestModel.EXCLUDES
@@ -52,12 +59,12 @@ class Topic( RestModel ):
     # Creates an instance of the class and saves to database
     # returns the model
     @classmethod
-    def create( cls, data, return_as_dict=True ):
+    def create( cls, data, return_as_dict=False ):
         # check that required properties are in the passed data
-        for prop in cls.REQUIRED_PROPERTIES:
-            if prop not in data:
-                logging.log( logging.ERROR, "Topic.create(), miss property: " + prop )
-                return False
+        # for prop in cls.REQUIRED_PROPERTIES:
+        #     if prop not in data:
+        #         logging.log( logging.ERROR, "Topic.create(), miss property: " + prop )
+        #         return False
 
         # TODO: validate passed data
         # for prop in data.keys():
@@ -69,24 +76,47 @@ class Topic( RestModel ):
         if DEVELOPING:
             logging.log( logging.INFO, data )
 
+        # add required properties to create class
         topic = cls(
             name=data[ "name" ],
             description=data[ "description" ],
-            icon=data[ "icon" ],
-            display_front_page=data[ "display_front_page" ]
+            icon=data[ "icon" ]
         )
 
+        # NOTE: can't remove because data is an ImmutableMultiDict
+        # remove the properties already in class
+        # data.pop( "name" )
+        # data.pop( "description" )
+        # data.pop( "icon" )
+
+        # add all other properties
+        # DONE: we will need to add by property
+        # for key, value in data.iteritems():
+        #     if not hasattr( topic, key ):
+        #         continue
+        #     if getattr( topic, key ) == value:
+        #         continue
+        #     setattr( topic, key, value )
+        if "display_front_page" in data:
+            value = data[ "display_front_page" ]
+            if value == "true" or value == "True":
+                topic.display_front_page = True
+            else:
+                topic.display_front_page = False
+
+        # save to database
         try:
-            topic.put()
+            key = topic.put()
         except Exception as e:
             logging.log( logging.ERROR, "Topic.create(), failed to create Topic: " + topic.name )
             logging.log( logging.ERROR, e )
             return False
 
+        # return as dict for display
         if return_as_dict:
             return topic.to_dict()
 
-        return topic
+        return key.urlsafe()
 
 
     # TODO: move out to parent class?
@@ -100,12 +130,15 @@ class Topic( RestModel ):
         display_front_page = True
 
         for name in names:
-            topic = cls.create( {
-                "name": name,
-                "description": description,
-                "icon": icon,
-                "display_front_page": display_front_page
-            } )
+            topic = cls.create(
+                {
+                    "name": name,
+                    "description": description,
+                    "icon": icon,
+                    "display_front_page": display_front_page
+                } ,
+                return_as_dict=True
+            )
 
             if Topic is False:
                 continue
@@ -153,18 +186,20 @@ class Topic( RestModel ):
 
         if launchlist_urlsafe_key != "" and launchlist is None:
             launchlist = self.check_key(
-                launchlist_urlsafe_key,
-                return_model=True
+                urlsafe_key=launchlist_urlsafe_key,
+                return_model=True,
+                check_model_type=False
             )
         elif launchlist is None:
             return False
 
-        if launchlist.key not in self.launchlists:
-            # update topic
-            self.launchlists.append( launchlist.key )
-            self.num_launchlists += 1
+        a_list = self.edit_list( self.launchlists, launchlist.key, add=True )
 
-        return False
+        if a_list is False:
+            return False
+
+        self.launchlists = a_list
+        return launchlist.put()
 
 
     # Creates dummy data for model
@@ -172,19 +207,44 @@ class Topic( RestModel ):
         pass
 
 
+    def edit_launchlists( self, launchlist, add=True ):
+        key = launchlist.key
+        a_list = self.edit_list( self.launchlists, key, add )
+
+        if a_list is False:
+            return False
+
+        self.launchlists = a_list
+
+        return True
+
+
     # Removes launchlist from Topic
     def remove_launchlist( self, launchlist_urlsafe_key ):
         # TODO: create method to transform websafe_key to regular key
-        launchlist = self.check_key( launchlist_urlsafe_key, return_model=True )
+        # NOTE: don't need to check model type sense kind argument in list property
+        # does that for us
+        launchlist = self.check_key(
+            urlsafe_key=launchlist_urlsafe_key,
+            return_model=True,
+            check_model_type=False
+        )
+        # launchlist = ndb.Key( urlsafe=launchlist_urlsafe_key ).get()
 
-        if self.num_launchlists == 0:
+        if launchlist is False:
             return False
-        elif launchlist.key in self.launchlists:
-            self.launchlists.remove( launchlist.key )
-            self.num_launchlists -= 1
-            return True
 
-        return False
+        # logging.log( logging.INFO, launchlist )
+
+        a_list = self.edit_list( self.launchlists, launchlist.key, add=False )
+
+        # logging.log( logging.INFO, a_list )
+
+        if a_list is False:
+            return False
+
+        self.launchlists = a_list
+        return launchlist.put()
 
 
     # Turns model into json encodable dict
@@ -216,24 +276,41 @@ class Topic( RestModel ):
     # TODO: validate passed data
     # Update this Topics data and return the Topic
     def update( self, data ):
-        model_dict = self.to_dict();
-        for prop in data.keys():
-            if prop not in Topic.REQUIRED_PROPERTIES or prop not in Topic.OTHER_PROPERTIES:
-                continue
-            if data[ prop ] == model_dict[ prop ]:
-                continue
-            model_dict[ prop ] == data[ prop ]
+        logging.log( logging.INFO, "display_front_page" in data )
 
-        # TODO: create dict_to_model?
-        model = Topic.dict_to_model( model_dict )
-        try:
-            model.put()
-        except Exception as e:
-            logging.log( "logging.ERROR", "Topic.update(), failed to update Topic: " + str( data ) )
-            logging.log( "logging.ERROR", e )
-            return False
+        if POST_KEYWORDS.remove_launchlists in data:
+            lists = data[ POST_KEYWORDS.remove_launchlists ]
+            if lists is not list:
+                lists = lists.split( "," )
 
-        return model_dict
+            for launchlist in lists:
+                success = self.remove_launchlist( launchlist_urlsafe_key=launchlist )
+
+                if success is False:
+                    return False
+
+        if POST_KEYWORDS.add_launchlists in data:
+            lists = data[ POST_KEYWORDS.add_launchlists ]
+            if lists is not list:
+                lists = lists.split( "," )
+
+            # logging.log( logging.INFO, lists )
+            for launchlist in lists:
+                # logging.log( logging.INFO, launchlist )
+                success = self.add_launchlist( launchlist_urlsafe_key=launchlist )
+
+                if success is False:
+                    return False
+
+        if "display_front_page" in data:
+            value = data[ "display_front_page" ]
+            if value == "true" or value == "True":
+                self.display_front_page = True
+            else:
+                self.display_front_page = False
+
+        return super( Topic, self ).update( data )
+
 
 
 
@@ -243,7 +320,8 @@ class TopicApi( RestApi ):
 
     # Handles all behaviour that removes data from this Topic
     @classmethod
-    def delete( cls, topic_ulrsafe_key, list_urlsafe_key=None ):
+    def delete( cls ):
+        return super(TopicApi, cls).delete()
         # if list_urlsafe_key != None:
         #     topic = cls.model_class.check_key( topic_ulrsafe_key, return_model=True )
         #     result = cls.model_class.remove_launchlist( list_urlsafe_key )
@@ -255,7 +333,7 @@ class TopicApi( RestApi ):
         # else:
         #     return super( TopicApi, cls ).delete( topic_ulrsafe_key )
 
-        return { "status": False, "msg": "no perms" }, 403
+        # return { "status": False, "msg": "no perms" }, 403
 
 
     # Gets all the Topic in its entirety
@@ -292,15 +370,34 @@ class TopicApi( RestApi ):
 
 
     # Updates the topic with the data passed
+    # NOTE: why not save ourselves the trouble and just directly go to super method?
+    # NOTE: because user auth for this topic will happen here
     @classmethod
     def post( cls, urlsafe_key ):
-        return { "status": False, "msg": "no perms" }, 403
+        return super( TopicApi, cls ).post( urlsafe_key )
+        # return { "status": False, "msg": "no perms" }, 403
+        # data = request.data
+        #
+        # if DEVELOPING:
+        #     logging.log( logging.INFO, data )
+        #
+        # model = cls.model_class.check_key(
+        #     urlsafe_key=urlsafe_key,
+        #     return_model=True,
+        #     check_model_type=True
+        # )
+        #
+        # if model is False:
+        #     return { "status": False, "msg": "bad key" }, 400
+        #
+        # model.update( data )
 
 
     # Creates a model from data passed, returns model's key
     @classmethod
     def put( cls ):
-        return { "status": False, "msg": "no perms" }, 403
+        return super( TopicApi, cls ).put()
+        # return { "status": False, "msg": "no perms" }, 403
 
 
 
@@ -361,20 +458,3 @@ class TopicsApi( RestApis ):
 
         else:
             return { "status": False }, 404
-
-
-
-# requests that will be routed to the RestModel class
-api.add_resource( TopicApi,
-    "/topic/<urlsafe_key>",
-    "/topic"
-)
-
-# NOTE: there is no default boolean converter
-# NOTE: http://werkzeug.pocoo.org/docs/0.11/routing/
-# TODO: remove includes and excludes url params
-api.add_resource( TopicsApi,
-    "/topics/<ajax>/<int:num>",
-    "/topics/<ajax>",
-    "/topics"
-)

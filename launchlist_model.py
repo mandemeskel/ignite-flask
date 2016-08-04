@@ -105,7 +105,10 @@ class LaunchList( RestModel ):
 
     # Creates set of dummy launchlists for passed object
     @classmethod
-    def create_dummy_launchlists( cls, parent_model ):
+    def create_dummy_launchlists( cls, parent_model, parent=None ):
+        if parent is None:
+            parent = int( ( ( random.random() ) * 10 ) % 3 - 1 )
+
         launchlists = []
         # entities = [parent_model]
         num_lists = int( ( random.random() * 100 ) % 10 ) + 3
@@ -155,14 +158,15 @@ class LaunchList( RestModel ):
             launchlist.put()
             launchlists.append( launchlist.to_dict( includes=[
                 "name", "description", "icon", "rating" ]) )
-            parent_model.add_launchlist( launchlist=launchlist )
+            parent_model.add_launchlist( launchlist=launchlist, parent=parent )
 
         # the call to to_dict saves unsaved entities, we just need to save parent
         # logging.log( logging.INFO, entities )
         # save all the new launchlist and their parent
         # ndb.put_multi( entities )
-        logging.log( logging.INFO, parent_model )
+        # logging.log( logging.INFO, parent_model )
         parent_model.put()
+
         return launchlists
 
 
@@ -198,10 +202,8 @@ class LaunchList( RestModel ):
 
         if parent:
             self.parent_launchlists.append( key )
-            self.num_parent_launchlists += 1
         else:
             self.child_launchlists.append( key )
-            self.num_child_launchlist += 1
 
         return True
 
@@ -342,21 +344,48 @@ class LaunchListsApi( RestApis ):
 
     # Retrieves all the launchlists associated with the model
     @classmethod
-    def get( cls, urlsafe_key="" ):
+    def get( cls, urlsafe_key="", list_type="launchlist" ):
         model = cls.model_class.check_key(
-            urlsafe_key,
+            urlsafe_key=urlsafe_key,
             return_model=True,
             check_model_type=False
         )
 
-        try:
-            launchlists = model.launchlists
-            num_launchlists = model.num_launchlists
-        except AttributeError:
-            return { "status": False, "msg": "no key" }, 400
+        if list_type == "child":
+
+            try:
+                launchlists = model.child_launchlists
+                num_launchlists = model.num_child_launchlists
+            except AttributeError:
+                return {"status": False, "msg": "no lists, bad type"}, 400
+
+            list_type = False
+
+        elif list_type == "parent":
+
+            try:
+                launchlists = model.parent_launchlists
+                num_launchlists = model.num_parent_launchlists
+                logging.info(logging.INFO, launchlists)
+            except AttributeError:
+                return {"status": False, "msg": "no lists, bad type"}, 400
+
+            list_type = True
+
+        else:
+            try:
+                launchlists = model.launchlists
+                num_launchlists = model.num_launchlists
+            except AttributeError:
+                return {"status": False, "msg": "no lists, bad type"}, 400
+
+        logging.info( logging.INFO, launchlists )
 
         if launchlists == []:
-            lists = cls.model_class.create_dummy_launchlists( model )
+            lists = cls.model_class.create_dummy_launchlists(
+                parent_model=model,
+                parent=list_type # whether to add to child or parent launchlist
+            )
             num_launchlists = len( lists )
         else:
             lists = cls.model_class.convert_keys_to_dicts(

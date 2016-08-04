@@ -53,14 +53,16 @@ class RestModel( ndb.Model ):
     # model properties
     # TODO: do not allow multiline names
     name = ndb.StringProperty(
-        default="Jane Doe", required=True )
+        default="Jane Doe",
+        required=True
+    )
     description = ndb.TextProperty(
         default="Job description: rocket jumper!" )
     # NOTE: should use BolbKeyProperty to store icons?
     # NOTE: but if imgs are hosted elsewhere then a string works
     icon = ndb.StringProperty(
-        default="../icons/apple_music_icon_trns.png",
-        required=True )
+        default="../icons/apple_music_icon_trns.png"
+    )
 
     # search realted properties
     tags = ndb.KeyProperty( repeated=True )
@@ -89,15 +91,16 @@ class RestModel( ndb.Model ):
         "tags", "creators", "admins",
         "contributors", "editors"
     ]
+    REQUIRED_PROPERTIES = [ "name" ]
 
 
     # Checks to see if key is an actual entity key
     @classmethod
     def check_key( cls,
                    urlsafe_key,
-                   return_model = False,
-                   check_model_type = True ):
-        model = ndb.Key( urlsafe = urlsafe_key ).get()
+                   return_model=False,
+                   check_model_type=True ):
+        model = ndb.Key( urlsafe=urlsafe_key ).get()
 
         # make sure we are editing the right type of model
         if check_model_type:
@@ -277,28 +280,47 @@ class RestModel( ndb.Model ):
             return True
 
 
+
+    def put( self ):
+        try:
+            return super( RestModel, self ).put()
+        except Exception:
+            return False
+
+
     # Updates the model with the data passed
     # returns boolean depedent on the success of the update
     def update( self, data ):
-        model_name = data.get( "name", self.name )
-        model_descr = data.get( "description", self.description )
-        contributors = data.get( "contributors", self.contributors )
+        # model_name = data.get( "name", self.name )
+        # model_descr = data.get( "description", self.description )
+        # contributors = data.get( "contributors", self.contributors )
 
-        if model_name != self.name:
-            self.name = model_name
+        # TODO: need to use flask-restful to parse incoming data then we can use this loop
+        # # TODO: try except ( AttributeError via getattr ) this for optimization
+        # for key in data.keys():
+        #     if not hasattr( self, key ):
+        #         continue
+        #
+        #     value = data[ key ]
+        #     if getattr( self, key ) == value:
+        #         continue
+        #
+        #     setattr( self, key, value )
 
-        if model_descr != self.description:
-            self.description = model_descr
+        # logging.log( logging.INFO, data.keys() )
+        # logging.log( logging.INFO, hasattr( self, "name" ) )
+        # logging.log( logging.INFO, self.launchlists )
 
-        if contributors is not self.contributors:
-            self.contributors = contributors
+        # if model_name != self.name:
+        #     self.name = model_name
+        #
+        # if model_descr != self.description:
+        #     self.description = model_descr
+        #
+        # if contributors is not self.contributors:
+        #     self.contributors = contributors
 
-        try:
-            self.put()
-        except Exception, e:
-            return False
-        else:
-            return self.key.urlsafe()
+        return self.put()
 
 
     # Checks to see if model is in the passed list
@@ -316,10 +338,31 @@ class RestApi( Resource ):
 
     model_class = RestModel
 
+    @classmethod
+    def make_response_dict( cls, status=True, **kwargs ):
+        response_dct = { "status": status }
+        for key, value in kwargs.iteritems():
+            response_dct[ key ] = value
+
+        return response_dct
+
+
     # Deletes the model from database
     @classmethod
-    def delete( cls, urlsafe_key ):
-        model = cls.model_class.check_key( urlsafe_key, return_model = True )
+    def delete( cls ):
+        if "key" not in request.form:
+            return cls.make_response_dict(
+                status=False,
+                msg="send the key of the Topic to delete",
+                format=" { 'key': 'hey-iam-a-key' }"
+            ), 400
+
+        urlsafe_key = request.form[ "key" ]
+        model = cls.model_class.check_key(
+            urlsafe_key,
+            return_model=True,
+            check_model_type=True
+        )
 
         if model is False:
             return { "status": False }, 400
@@ -330,7 +373,7 @@ class RestApi( Resource ):
         return { "status": True }
 
 
-    # Retrives the model and sends it as a dict
+    # Retrieves the model and sends it as a dict
     @classmethod
     def get( cls, urlsafe_key ):
         data = request.form
@@ -355,15 +398,19 @@ class RestApi( Resource ):
         if DEVELOPING:
             logging.log( logging.INFO, data )
 
-        model = cls.model_class.check_key( urlsafe_key, return_model = True )
+        model = cls.model_class.check_key(
+            urlsafe_key=urlsafe_key,
+            return_model=True,
+            check_model_type=True
+        )
 
         if model is False:
-            return { "status": False }, 400
+            return {"status": False, "msg": "bad key"}, 400
 
-        urlsafe_key = model.update( data )
+        success = model.update( data )
 
-        if urlsafe_key:
-            return { "status": True, "key": urlsafe_key }
+        if success:
+            return { "status": True }
         else:
             return { "status": False }, 500
 
@@ -376,8 +423,12 @@ class RestApi( Resource ):
         if DEVELOPING:
             logging.log( logging.INFO, data )
 
-        if "name" not in data or "description" not in data:
-            return { "status": False }, 400
+        for required_prop in cls.model_class.REQUIRED_PROPERTIES:
+            if required_prop not in data:
+                return cls.make_response_dict(
+                    status=False,
+                    msg="need all required properties to create topic, missing: " + required_prop,
+                    required_properties=cls.model_class.REQUIRED_PROPERTIES ), 400
 
         urlsafe_key = cls.model_class.create( data )
 
@@ -417,8 +468,4 @@ class RestApis( Resource ):
 
 
 
-# requests that will be routed to the RestModel class
-api.add_resource( RestApi,
-    "/test/<urlsafe_key>",
-    "/test"
-)
+
