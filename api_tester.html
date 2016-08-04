@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="ignite">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Who needs curl?</title>
+
+    <!-- TODO: use local files for dev purposes -->
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+	<link rel="stylesheet" href="frontend/css/styles.css?v=1.0">
+
+	<!-- TODO: use local files for dev purposes -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+
+	<!-- TODO: use local files for dev purposes -->
+	<!-- <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script> -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.js"></script>
+
+</head>
+
+<body ng-controller="mainCtrlr">
+
+    <input id="method" value="POST" ng-model="form.method"/>
+    <input id="action" value="localhost:8080/topic/" ng-model="form.action"/>
+
+    <select id="data" ng-model="form.input_type">
+        <option value="array">array</option>
+        <option value="int">int</option>
+        <option value="text">text</option>
+    </select>
+
+    <button ng-click="form.createInput()">create input</button>
+
+    <form id="api" method="{{ form.method }}" action="{{ form.action }}">
+
+        <div id="array1">
+            <input value="property name">
+            <input name="" value="">
+            <button> add another value </button>
+        </div>
+
+        <div ng-repeat="input in form.inputs" id="input-{{input.name}}">
+            <input name="{{ input.name }}" ng-repeat="subinput in input.inputs" />
+        </div>
+
+        <input id="submit" type="submit" value="Let's go!"/>
+    </form>
+
+    <p id="log"></p>
+
+
+</body>
+
+    <script type="JavaScript">
+        var app = angular.module( "ignite", [] ),
+            DEVELOPING = true,
+            BASE_URL = "http://localhost:3636", //"http://192.168.42.64:8080",  //"http://localhost:8080",
+            BASE_API_URL = "/api";
+
+        if( !DEVELOPING )
+            BASE_URL = "https://lnchlist.appspot.com";
+
+        // BASE_API_URL = BASE_URL + BASE_API_URL;
+
+
+        /**
+         * Start the app
+         */
+        app.run( function() {
+        } );
+
+
+        /**
+         * The ajaxService handles all the server calls.
+         * @param  {Object} $http   namesapce that allows access to Angular's ajax api
+         * @return {Object}         a collection of functions that make unique calls to the server
+         */
+        app.service( "ajaxService", function( $http, $location ) {
+
+            return ({
+
+                request : function( method, url, data, onSuccess, onFail ) {
+
+                    if( onSuccess == null )
+                        onSuccess = handleAJAXSuccess;
+
+                    if( onFail == null )
+                        onFail = handleAJAXFail;
+
+                    var request = $http({
+                        method: method,
+                        url: url,
+                        data: data,
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+                    });
+
+                    return request.then( onSuccess, onFail );
+
+                }
+
+            })
+
+        });
+
+
+        app.controller( "mainCtrlr", function( $scope, ajaxService ) {
+
+            $scope.form = {
+                method: "POST",
+                action: "localhost:8080/topic/",
+                inputs: [],
+                input_type,
+                createInput: function() {
+
+
+
+                }
+            }
+
+        } );
+
+
+        function ArrayParameter( name, values ) {
+            return {
+                name: name,
+                values: values
+            }
+        }
+
+
+        // default success handler for the AJAX requests
+        function handleAJAXSuccess( data, status, headers, config ) {
+
+            if( DEVELOPING )
+                console.log( "success", status, data );
+
+        }
+
+
+        // default error handler for the AJAX requests
+        function handleAJAXFail( data, status, headers, config ) {
+
+            if( DEVELOPING )
+                console.log( "error", status, data );
+
+        }
+
+    </script>
+
+</html>
