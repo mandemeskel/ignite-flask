@@ -94,6 +94,16 @@ class RestModel( ndb.Model ):
     REQUIRED_PROPERTIES = [ "name" ]
 
 
+    @classmethod
+    def get_excludes( cls, new_excludes=None ):
+        if new_excludes is None:
+            return cls.EXCLUDES
+        else:
+            excludes = cls.EXCLUDES
+            excludes.extend( new_excludes )
+            return excludes
+
+
     # Checks to see if key is an actual entity key
     @classmethod
     def check_key( cls,
@@ -349,15 +359,17 @@ class RestApi( Resource ):
 
     # Deletes the model from database
     @classmethod
-    def delete( cls ):
-        if "key" not in request.form:
-            return cls.make_response_dict(
-                status=False,
-                msg="send the key of the Topic to delete",
-                format=" { 'key': 'hey-iam-a-key' }"
-            ), 400
+    def delete( cls, urlsafe_key="" ):
+        if urlsafe_key == "":
+            if "key" not in request.form:
+                return cls.make_response_dict(
+                    status=False,
+                    msg="send the key of the Topic to delete",
+                    format=" { 'key': 'hey-iam-a-key' }"
+                ), 400
+            else:
+                urlsafe_key = request.form[ "key" ]
 
-        urlsafe_key = request.form[ "key" ]
         model = cls.model_class.check_key(
             urlsafe_key,
             return_model=True,

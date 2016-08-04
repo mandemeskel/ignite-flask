@@ -37,8 +37,7 @@ api.add_resource( TopicApi,
 # NOTE: http://werkzeug.pocoo.org/docs/0.11/routing/
 # TODO: remove includes and excludes url params
 api.add_resource( TopicsApi,
-    "/app/topics/<ajax>/<int:num>",
-    "/app/topics/<ajax>",
+    "/app/topics/<int:num>",
     "/app/topics"
 )
 

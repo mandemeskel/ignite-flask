@@ -97,11 +97,11 @@ class LaunchList( RestModel ):
     headings = ndb.StructuredProperty( LaunchListHeading, repeated=True )
 
     # constants
-    EXCLUDES = RestModel.EXCLUDES
-    EXCLUDES.extend( [
-        "resources", "topics", "child_launchlists",
-        "parent_launchlists", "headings", "communities"
-    ] )
+    # EXCLUDES = RestModel.EXCLUDES
+    # EXCLUDES.extend( [
+    #     "resources", "topics", "child_launchlists",
+    #     "parent_launchlists", "headings", "communities"
+    # ] )
 
     # Creates set of dummy launchlists for passed object
     @classmethod
@@ -158,7 +158,16 @@ class LaunchList( RestModel ):
             launchlist.put()
             launchlists.append( launchlist.to_dict( includes=[
                 "name", "description", "icon", "rating" ]) )
-            parent_model.add_launchlist( launchlist=launchlist, parent=parent )
+
+            if type( parent_model ).__name__ is "Topic":
+                parent_model.add_launchlist(
+                    launchlist=launchlist
+                )
+            else:
+                parent_model.add_launchlist(
+                    launchlist,
+                    parent
+                )
 
         # the call to to_dict saves unsaved entities, we just need to save parent
         # logging.log( logging.INFO, entities )
@@ -168,6 +177,16 @@ class LaunchList( RestModel ):
         parent_model.put()
 
         return launchlists
+
+
+    # Get list of items to exclude from to_dict
+    @classmethod
+    def get_excludes( cls, new_excludes=None ):
+        return super( LaunchList, cls ).get_excludes(
+            [
+                "resources", "topics", "child_launchlists",
+                "parent_launchlists", "headings", "communities"
+            ] )
 
 
     # Adds topic to the launchlist
@@ -208,22 +227,6 @@ class LaunchList( RestModel ):
         return True
 
 
-    def add_resource( self, resource, safe=False ):
-        pass
-
-
-    def delete_topic( self, resource, safe=False ):
-        pass
-
-
-    def delete_launchlist( self, resource, parent=False, safe=False ):
-        pass
-
-
-    def delete_resource( self, resource, safe=False ):
-        pass
-
-
     def edit_topics( self, topic, add=True, safe=False ):
         if not safe:
             if type( topic ).__name__ != "Topic":
@@ -237,41 +240,6 @@ class LaunchList( RestModel ):
         self.topics = new_list
 
         return True
-
-        # key = topic.key
-        # try:
-        #     # look for key in list
-        #     index = self.topics.index( key )
-        # except ValueError:
-        #     # can't delete a key that isn't in the list
-        #     if add is False:
-        #         return False
-        #     # add key to list
-        #     else:
-        #         self.topics.append( key )
-        #         return True
-        # else:
-        #     # remove key from list
-        #     if add is False:
-        #         self.topics.pop( index )
-        #         return True
-        #     # key is already in list, do nothing
-        #     else:
-        #         return False
-
-        # if key in self.topics:
-        #     # topic is in the list, delete it
-        #     if add is False:
-        #         self.topics.pop( key )
-        #         return True
-        #     return  False
-        # # cant to remove topic not in the list of topics
-        # elif add is False:
-        #     return False
-        #
-        # self.topics.append( key )
-        #
-        # return True
 
 
     def edit_launchlists( self, launchlist,
@@ -304,30 +272,6 @@ class LaunchList( RestModel ):
 
         return True
 
-        # try:
-        #     # look for key in list
-        #     index = the_list.index( key )
-        # except ValueError:
-        #     # can't delete a key that isn't in the list
-        #     if add is False:
-        #         return False
-        #     # add key to list
-        #     else:
-        #         the_list.append( key )
-        # else:
-        #     # remove key from list
-        #     if add is False:
-        #         the_list.pop( index )
-        #     # key is already in list, do nothing
-        #     else:
-        #         return False
-        # finally:
-        #     if parent:
-        #         self.parent_launchlists = the_list
-        #     else:
-        #         self.child_launchlists = the_list
-        #
-        # return True
 
 
 
@@ -379,7 +323,7 @@ class LaunchListsApi( RestApis ):
             except AttributeError:
                 return {"status": False, "msg": "no lists, bad type"}, 400
 
-        logging.info( logging.INFO, launchlists )
+        # logging.info( logging.INFO, launchlists )
 
         if launchlists == []:
             lists = cls.model_class.create_dummy_launchlists(

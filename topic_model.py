@@ -44,10 +44,16 @@ class Topic( RestModel ):
     REQUIRED_PROPERTIES = [ "name", "description", "icon" ]
     OBJECT_PROPS = RestModel.OBJECT_PROPS
     OBJECT_PROPS.append( "launchlists" )
-    EXCLUDES = RestModel.EXCLUDES
-    EXCLUDES.extend( [
-        "launchlists"
-    ] )
+    # EXCLUDES = RestModel.EXCLUDES
+    # EXCLUDES.extend( [
+    #     "launchlists"
+    # ] )
+
+
+    @classmethod
+    def get_excludes( cls, new_excludes=None ):
+        return super( Topic, cls ).get_excludes( [ "launchlists" ] )
+
 
     # Returns a list of Topics with display_front_page=True
     # @classmethod
@@ -190,6 +196,10 @@ class Topic( RestModel ):
                 return_model=True,
                 check_model_type=False
             )
+
+            if launchlist is False:
+                return False
+
         elif launchlist is None:
             return False
 
@@ -205,6 +215,26 @@ class Topic( RestModel ):
     # Creates dummy data for model
     def create_dummy_data( self ):
         pass
+
+
+    # Remove references to this topic
+    def delete( self ):
+        logging.log( logging.INFO, self.EXCLUDES )
+        for property in self.get_excludes():
+            for entity_key in getattr( self, property ):
+                entity_key.get().edit_topics(
+                    self,
+                    add=False,
+                    safe=True
+                )
+        # for launchlist_key in self.launchlists:
+        #     launchlist_key.get().edit_topics(
+        #         self,
+        #         add=False,  # remove topic from launchlist
+        #         safe=True,  # don't need to validate topic
+        #     )
+
+        return True
 
 
     def edit_launchlists( self, launchlist, add=True ):
@@ -316,24 +346,36 @@ class Topic( RestModel ):
 
 # TODO: needs auth to delete, post, and put
 class TopicApi( RestApi ):
+
     model_class = Topic
 
+    # DONE: remove topic from launchlists
     # Handles all behaviour that removes data from this Topic
     @classmethod
-    def delete( cls ):
-        return super(TopicApi, cls).delete()
-        # if list_urlsafe_key != None:
-        #     topic = cls.model_class.check_key( topic_ulrsafe_key, return_model=True )
-        #     result = cls.model_class.remove_launchlist( list_urlsafe_key )
+    def delete( cls, urlsafe_key="" ):
+        topic = cls.model_class.check_key(
+            urlsafe_key=urlsafe_key,
+            return_model=True,
+            check_model_type=True
+        )
 
-        #     if result:
-        #         return { "status": False, "msg": "failed to remove launchlist" }, 500
+        if topic is False:
+            return cls.make_response_dict(
+                status=False,
+                msg="bad key, can't get topic"
+            ), 400
 
-        #     return { "status": True }
-        # else:
-        #     return super( TopicApi, cls ).delete( topic_ulrsafe_key )
+        if not topic.delete():
+            return cls.make_response_dict(
+                status=False,
+                msg="can't delete topic"
+            ), 400
 
-        # return { "status": False, "msg": "no perms" }, 403
+        topic.key.delete()
+
+        return cls.make_response_dict(
+            status=True
+        )
 
 
     # Gets all the Topic in its entirety
@@ -349,22 +391,7 @@ class TopicApi( RestApi ):
         if topic is False:
             return { "status": False }, 400
 
-        topic_dict = topic.to_dict( excludes=topic.EXCLUDES )
-
-        # NOTE: don't send lists with model, request for lists specifically
-        # launchlists = cls.model_class.convert_keys_to_dicts(
-        #     topic.launchlists,
-        #     includes=[ "name", "rating", "author",
-        #                "last_update", "num_resoruces" ]
-        # )
-        #
-        # contributors = cls.model_class.convert_keys_to_dicts(
-        #     topic.contributors,
-        #     includes=[ "name", "author", "last_update" ]
-        # )
-        #
-        # topic_dict[ "launchlists" ] = launchlists
-        # topic_dict[ "contributors" ] = contributors
+        topic_dict = topic.to_dict( excludes=topic.get_excludes() )
 
         return { "status": True, "topic": topic_dict }, 200
 
@@ -375,29 +402,12 @@ class TopicApi( RestApi ):
     @classmethod
     def post( cls, urlsafe_key ):
         return super( TopicApi, cls ).post( urlsafe_key )
-        # return { "status": False, "msg": "no perms" }, 403
-        # data = request.data
-        #
-        # if DEVELOPING:
-        #     logging.log( logging.INFO, data )
-        #
-        # model = cls.model_class.check_key(
-        #     urlsafe_key=urlsafe_key,
-        #     return_model=True,
-        #     check_model_type=True
-        # )
-        #
-        # if model is False:
-        #     return { "status": False, "msg": "bad key" }, 400
-        #
-        # model.update( data )
 
 
     # Creates a model from data passed, returns model's key
     @classmethod
     def put( cls ):
         return super( TopicApi, cls ).put()
-        # return { "status": False, "msg": "no perms" }, 403
 
 
 
@@ -405,31 +415,13 @@ class TopicsApi( RestApis ):
     model_class = Topic
 
     # TODO: validate data
-    # TODO: remove includes and excludes params
     # gets multiple topics
     @classmethod
-    def get( cls, ajax=False, num=3 ):
+    def get( cls, num=3 ):
         data = request.args
 
         if DEVELOPING:
             logging.log( logging.INFO, data )
-
-        # # NOTE: not python 3.x friendly
-        # if includes != [] and isinstance( includes, basestring ):
-        #     includes = includes.split( "," )
-        #
-        # # NOTE: not python 3.x friendly
-        # if excludes != [] and isinstance( excludes, basestring ):
-        #     excludes = excludes.split( "," )
-        #
-        # if DEVELOPING:
-        #     logging.log( logging.INFO, type( includes ) )
-        #     logging.log( logging.INFO, type( excludes ) )
-
-        # send only the neccassary info by default
-        # if excludes == []:
-        #     excludes = cls.model_class.OBJECT_PROPS
-        #     excludes.extend( [ "display_front_page", "num_launchlists" ] )
 
         # NOTE: not python 3.x friendly, should be isinstance( num, str )
         if isinstance( num, basestring ):
@@ -438,23 +430,19 @@ class TopicsApi( RestApis ):
             except Exception, e:
                 return { "status": False }, 500
 
-
         # if DEVELOPING:
         #     logging.log( logging.INFO, num )
 
-        # TODO: this is always True because ajax's value is passed as a string
-        if ajax:
-            topics = cls.model_class.get_topics(
-                num_topics=num,
-                includes=[ "name", "icon" ]
-            )
+        topics = cls.model_class.get_topics(
+            num_topics=num,
+            includes=[ "name", "icon" ]
+        )
 
-            if topics is False:
-                return { "status": False }, 500
-            elif topics is None:
-                return { "status": False, RESPONSE_STATUS.retry: True }, 204
+        if topics is False:
+            return { "status": False }, 500
+        elif topics is None:
+            return { "status": False, RESPONSE_STATUS.retry: True }, 204
 
-            return { "status": True, "topics": topics }
+        return { "status": True, "topics": topics }
 
-        else:
-            return { "status": False }, 404
+
