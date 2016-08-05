@@ -14,7 +14,7 @@ from flask_restful import Resource, Api
 from crossdomain import crossdomain
 
 # Our stuff
-from rest_model import RestApi, RestApis, RestModel, RESPONSE_STATUS
+from rest_model import RestApi, RestsApi, RestModel, RESPONSE_STATUS
 from launchlist_model import LaunchList
 
 app = Flask( __name__ )
@@ -420,7 +420,7 @@ class TopicApi( RestApi ):
 
 
 
-class TopicsApi( RestApis ):
+class TopicsApi(RestsApi):
     model_class = Topic
 
     # TODO: validate data

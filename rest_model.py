@@ -194,7 +194,7 @@ class RestModel( ndb.Model ):
                 return False
 
 
-    # Turns model into json encodable dict
+    # Turns model into json friendly dict
     def to_dict( self,
                  object_props=None,
                  includes=None,
@@ -286,7 +286,8 @@ class RestModel( ndb.Model ):
 
 
     # Creates dummy data for model
-    def create_dummy_data( self ):
+    @classmethod
+    def create_dummy_data( cls, **kwargs ):
         pass
 
 
@@ -300,7 +301,7 @@ class RestModel( ndb.Model ):
             return True
 
 
-
+    # Save model to database
     def put( self ):
         try:
             return super( RestModel, self ).put()
@@ -310,7 +311,7 @@ class RestModel( ndb.Model ):
 
     # TODO: need to implement data validation
     # Updates the model with the data passed
-    # returns boolean depedent on the success of the update
+    # returns boolean dependent on the success of the update
     def update( self, data ):
         # model_name = data.get( "name", self.name )
         # model_descr = data.get( "description", self.description )
@@ -455,7 +456,7 @@ class RestApi( Resource ):
             if required_prop not in data:
                 return cls.make_response_dict(
                     status=False,
-                    msg="need all required properties to create topic, missing: " + required_prop,
+                    msg="need all required properties to create model, missing: " + required_prop,
                     required_properties=cls.model_class.get_required_properties() ), 400
 
         urlsafe_key = cls.model_class.create( data )
@@ -467,7 +468,7 @@ class RestApi( Resource ):
 
 
 
-class RestApis( RestApi ):
+class RestsApi( RestApi ):
 
     model_class = RestModel
 

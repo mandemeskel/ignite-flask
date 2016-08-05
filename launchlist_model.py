@@ -16,7 +16,9 @@ from flask_restful import Resource, Api
 from crossdomain import crossdomain
 
 # Our stuff
-from rest_model import RestApi, RestApis, RestModel, RESPONSE_STATUS
+from rest_model import RestApi, RestsApi, RestModel
+
+
 
 app = Flask( __name__ )
 api = Api( app )
@@ -271,12 +273,12 @@ class LaunchList( RestModel ):
         return True
 
 
-    def edit_resources( self, topic, add=True, safe=False ):
+    def edit_resources( self, resource, add=True, safe=False ):
         if not safe:
-            if type( topic ).__name__ != "Resources":
+            if type( resource ).__name__ != "ResourceModel":
                 return False
 
-        new_list = self.edit_list( self.resources, topic.key, add )
+        new_list = self.edit_list( self.resources, resource.key, add )
 
         if new_list is False:
             return False
@@ -295,7 +297,7 @@ class LaunchListApi( RestApi ):
 
 
 
-class LaunchListsApi( RestApis ):
+class LaunchListsApi(RestsApi):
 
     model_class = LaunchList
 
