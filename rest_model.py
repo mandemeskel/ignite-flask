@@ -104,6 +104,16 @@ class RestModel( ndb.Model ):
             return excludes
 
 
+    @classmethod
+    def get_required_properties( cls, new_requires=None ):
+        if new_requires is None:
+            return cls.REQUIRED_PROPERTIES
+        else:
+            requires = cls.REQUIRED_PROPERTIES
+            requires.extend( new_requires )
+            return requires
+
+
     # Checks to see if key is an actual entity key
     @classmethod
     def check_key( cls,
@@ -298,6 +308,7 @@ class RestModel( ndb.Model ):
             return False
 
 
+    # TODO: need to implement data validation
     # Updates the model with the data passed
     # returns boolean depedent on the success of the update
     def update( self, data ):
@@ -307,15 +318,15 @@ class RestModel( ndb.Model ):
 
         # TODO: need to use flask-restful to parse incoming data then we can use this loop
         # # TODO: try except ( AttributeError via getattr ) this for optimization
-        # for key in data.keys():
-        #     if not hasattr( self, key ):
-        #         continue
-        #
-        #     value = data[ key ]
-        #     if getattr( self, key ) == value:
-        #         continue
-        #
-        #     setattr( self, key, value )
+        for key in data.keys():
+            if not hasattr( self, key ):
+                continue
+
+            value = data[ key ]
+            if getattr( self, key ) == value:
+                continue
+
+            setattr( self, key, value )
 
         # logging.log( logging.INFO, data.keys() )
         # logging.log( logging.INFO, hasattr( self, "name" ) )
@@ -330,7 +341,12 @@ class RestModel( ndb.Model ):
         # if contributors is not self.contributors:
         #     self.contributors = contributors
 
-        return self.put()
+        try:
+            self.put()
+        except Exception:
+            return False
+
+        return True
 
 
     # Checks to see if model is in the passed list
@@ -398,7 +414,7 @@ class RestApi( Resource ):
         if model is False:
             return { "status": False }, 400
 
-        model_dict = model.to_dict( excludes=model.EXCLUDES )
+        model_dict = model.to_dict( excludes=model.get_excludes() )
         return { "status": True, "model": model_dict }
 
 
@@ -435,12 +451,12 @@ class RestApi( Resource ):
         if DEVELOPING:
             logging.log( logging.INFO, data )
 
-        for required_prop in cls.model_class.REQUIRED_PROPERTIES:
+        for required_prop in cls.model_class.get_required_properties():
             if required_prop not in data:
                 return cls.make_response_dict(
                     status=False,
                     msg="need all required properties to create topic, missing: " + required_prop,
-                    required_properties=cls.model_class.REQUIRED_PROPERTIES ), 400
+                    required_properties=cls.model_class.get_required_properties() ), 400
 
         urlsafe_key = cls.model_class.create( data )
 
@@ -451,7 +467,7 @@ class RestApi( Resource ):
 
 
 
-class RestApis( Resource ):
+class RestApis( RestApi ):
 
     model_class = RestModel
 

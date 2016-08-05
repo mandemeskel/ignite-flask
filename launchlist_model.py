@@ -96,12 +96,6 @@ class LaunchList( RestModel ):
     rating = ndb.IntegerProperty( default=-1 )
     headings = ndb.StructuredProperty( LaunchListHeading, repeated=True )
 
-    # constants
-    # EXCLUDES = RestModel.EXCLUDES
-    # EXCLUDES.extend( [
-    #     "resources", "topics", "child_launchlists",
-    #     "parent_launchlists", "headings", "communities"
-    # ] )
 
     # Creates set of dummy launchlists for passed object
     @classmethod
@@ -129,10 +123,6 @@ class LaunchList( RestModel ):
 
             added = False
             if type( parent_model ).__name__ == "Topic":
-                # added = launchlist.add_topic(
-                #     topic=parent_model,
-                #     safe=True
-                # )
                 added = launchlist.edit_topics(
                     topic=parent_model,
                     add=True,
@@ -145,11 +135,6 @@ class LaunchList( RestModel ):
                     add=True,
                     safe=True
                 )
-                # added = launchlist.add_launchlist(
-                #     launchlist=parent_model,
-                #     parent=True,
-                #     safe=True
-                # )
 
             if not added:
                 continue
@@ -159,14 +144,16 @@ class LaunchList( RestModel ):
             launchlists.append( launchlist.to_dict( includes=[
                 "name", "description", "icon", "rating" ]) )
 
-            if type( parent_model ).__name__ is "Topic":
+            if type( parent_model ) is not cls:
                 parent_model.add_launchlist(
                     launchlist=launchlist
                 )
             else:
-                parent_model.add_launchlist(
-                    launchlist,
-                    parent
+                parent_model.edit_launchlists(
+                    launchlist=launchlist,
+                    parent=parent,
+                    add=True,
+                    safe=True
                 )
 
         # the call to to_dict saves unsaved entities, we just need to save parent
@@ -189,6 +176,17 @@ class LaunchList( RestModel ):
             ] )
 
 
+    # Get list of properties necessary to create this model
+    @classmethod
+    def get_required_properties( cls, new_requires=None ):
+        return super( LaunchList, cls ).get_required_properties(
+            [
+                "description",
+                "icon"
+            ]
+        )
+
+
     # Adds topic to the launchlist
     def add_topic( self, topic, safe=False ):
         if not safe:
@@ -205,26 +203,26 @@ class LaunchList( RestModel ):
         return True
 
 
-    # NOTE: how expensive are these calls to type?
-    # Adds launchlist to launchlist as its parent or child
-    def add_launchlist( self, launchlist, parent=False, safe=False ):
-        if not safe:
-            if type( launchlist ) != type( self ):
-                return False
-
-        key = launchlist.key
-        if key == self.key:
-            return False
-
-        if key in self.parent_launchlists or key in self.child_launchlists:
-            return False
-
-        if parent:
-            self.parent_launchlists.append( key )
-        else:
-            self.child_launchlists.append( key )
-
-        return True
+    # # NOTE: how expensive are these calls to type?
+    # # Adds launchlist to launchlist as its parent or child
+    # def add_launchlist( self, launchlist, parent=False, safe=False ):
+    #     if not safe:
+    #         if type( launchlist ) != type( self ):
+    #             return False
+    #
+    #     key = launchlist.key
+    #     if key == self.key:
+    #         return False
+    #
+    #     if key in self.parent_launchlists or key in self.child_launchlists:
+    #         return False
+    #
+    #     if parent:
+    #         self.parent_launchlists.append( key )
+    #     else:
+    #         self.child_launchlists.append( key )
+    #
+    #     return True
 
 
     def edit_topics( self, topic, add=True, safe=False ):
@@ -273,6 +271,21 @@ class LaunchList( RestModel ):
         return True
 
 
+    def edit_resources( self, topic, add=True, safe=False ):
+        if not safe:
+            if type( topic ).__name__ != "Resources":
+                return False
+
+        new_list = self.edit_list( self.resources, topic.key, add )
+
+        if new_list is False:
+            return False
+
+        self.resources = new_list
+
+        return True
+
+
 
 
 class LaunchListApi( RestApi ):
@@ -295,13 +308,19 @@ class LaunchListsApi( RestApis ):
             check_model_type=False
         )
 
+        if model is False:
+            return cls.make_response_dict(
+                status=True,
+                msg="Bad key"
+            ), 400
+
         if list_type == "child":
 
             try:
                 launchlists = model.child_launchlists
                 num_launchlists = model.num_child_launchlists
             except AttributeError:
-                return {"status": False, "msg": "no lists, bad type"}, 400
+                return {"status": False, "msg": "no lists, bad key"}, 400
 
             list_type = False
 
@@ -310,9 +329,9 @@ class LaunchListsApi( RestApis ):
             try:
                 launchlists = model.parent_launchlists
                 num_launchlists = model.num_parent_launchlists
-                logging.info(logging.INFO, launchlists)
+                # logging.info(logging.INFO, launchlists)
             except AttributeError:
-                return {"status": False, "msg": "no lists, bad type"}, 400
+                return {"status": False, "msg": "no lists, bad key"}, 400
 
             list_type = True
 
@@ -342,14 +361,3 @@ class LaunchListsApi( RestApis ):
                  "launchlists": lists,
                  "num_launchlists": num_launchlists
         }
-
-
-
-
-# api.add_resource( LaunchListApi,
-#     "/app/launchlist/<urlsafe_key>"
-# )
-#
-# api.add_resource( LaunchListsApi,
-#     "/app/launchlists/<urlsafe_key>"
-# )

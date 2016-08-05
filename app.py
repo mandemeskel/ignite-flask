@@ -42,7 +42,8 @@ api.add_resource( TopicsApi,
 )
 
 api.add_resource( LaunchListApi,
-    "/app/launchlist/<urlsafe_key>"
+    "/app/launchlist/<urlsafe_key>",
+    "/app/launchlist"
 )
 
 api.add_resource( LaunchListsApi,

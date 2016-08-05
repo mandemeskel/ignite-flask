@@ -41,19 +41,13 @@ class Topic( RestModel ):
         lambda self: len( self.launchlists ) )
 
     # constants
-    REQUIRED_PROPERTIES = [ "name", "description", "icon" ]
+    # REQUIRED_PROPERTIES = [ "name", "description", "icon" ]
     OBJECT_PROPS = RestModel.OBJECT_PROPS
     OBJECT_PROPS.append( "launchlists" )
     # EXCLUDES = RestModel.EXCLUDES
     # EXCLUDES.extend( [
     #     "launchlists"
     # ] )
-
-
-    @classmethod
-    def get_excludes( cls, new_excludes=None ):
-        return super( Topic, cls ).get_excludes( [ "launchlists" ] )
-
 
     # Returns a list of Topics with display_front_page=True
     # @classmethod
@@ -185,6 +179,21 @@ class Topic( RestModel ):
             )
 
         return topics_dict
+
+
+    @classmethod
+    def get_excludes( cls, new_excludes=None ):
+        return super( Topic, cls ).get_excludes( [ "launchlists" ] )
+
+
+    @classmethod
+    def get_required_properties( cls, new_requires=None ):
+        return super( Topic, cls ).get_required_properties(
+            [
+                "description",
+                "icon"
+            ]
+        )
 
 
     # Adds launchlist to Topic
