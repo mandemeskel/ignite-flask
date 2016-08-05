@@ -15,7 +15,7 @@ from crossdomain import crossdomain
 
 # Our stuff
 from rest_model import RestApi, RestsApi, RestModel, RESPONSE_STATUS
-from launchlist_model import LaunchList
+from launchlist_model import Launchlist
 
 app = Flask( __name__ )
 api = Api( app )
@@ -36,7 +36,7 @@ class Topic( RestModel ):
     # display this topic on the front page?
     display_front_page = ndb.BooleanProperty( default=False )
     # this is a list of launchlists keys
-    launchlists = ndb.KeyProperty( repeated=True,  kind=LaunchList )
+    launchlists = ndb.KeyProperty(repeated=True, kind=Launchlist)
     num_launchlists = ndb.ComputedProperty(
         lambda self: len( self.launchlists ) )
 

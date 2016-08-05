@@ -67,6 +67,7 @@ class RestModel( ndb.Model ):
     # search realted properties
     tags = ndb.KeyProperty( repeated=True )
     num_tags = ndb.IntegerProperty( default=0 )
+    rating = ndb.IntegerProperty( default=-1 )
 
     # user related properties
     # TODO: use kind argument to force list to have a specific model subclass, string or model subclass works
@@ -79,9 +80,20 @@ class RestModel( ndb.Model ):
     editors = ndb.KeyProperty( repeated=True )
     num_editors = ndb.IntegerProperty( default=0 )
 
+    # whether or not this model is public and searchable or private
+    private = ndb.BooleanProperty( default=False )
+    # if private, this is the list of users that can view the model
+    viewers = ndb.KeyProperty( repeated=True )
+    num_viewers = ndb.ComputedProperty(
+        lambda self: len(self.viewers) )
+
     # auto-properties
     date_created = ndb.DateProperty( auto_now_add=True )
     last_update = ndb.DateProperty( auto_now=True )
+
+    # a model responsible for keeping track of the meta info
+    # of this model
+    meta = ndb.KeyProperty()
 
     # constants
     OBJECT_PROPS = [ "date_created", "last_update" ]
@@ -99,9 +111,7 @@ class RestModel( ndb.Model ):
         if new_excludes is None:
             return cls.EXCLUDES
         else:
-            excludes = cls.EXCLUDES
-            excludes.extend( new_excludes )
-            return excludes
+            return new_excludes + cls.EXCLUDES
 
 
     @classmethod
@@ -109,9 +119,7 @@ class RestModel( ndb.Model ):
         if new_requires is None:
             return cls.REQUIRED_PROPERTIES
         else:
-            requires = cls.REQUIRED_PROPERTIES
-            requires.extend( new_requires )
-            return requires
+            return new_requires + cls.REQUIRED_PROPERTIES
 
 
     # Checks to see if key is an actual entity key
@@ -381,8 +389,8 @@ class RestApi( Resource ):
             if "key" not in request.form:
                 return cls.make_response_dict(
                     status=False,
-                    msg="send the key of the Topic to delete",
-                    format=" { 'key': 'hey-iam-a-key' }"
+                    msg="send the key of the Topic, in url, to delete it",
+                    format="../app/MODEL_TYPE/MODEL_KEY"
                 ), 400
             else:
                 urlsafe_key = request.form[ "key" ]
@@ -393,10 +401,10 @@ class RestApi( Resource ):
             check_model_type=True
         )
 
-        if model is False:
+        if model == False:
             return { "status": False }, 400
 
-        if model.delete() is False:
+        if model.delete() == False:
             return { "status":  False }, 500
 
         return { "status": True }
@@ -404,7 +412,7 @@ class RestApi( Resource ):
 
     # Retrieves the model and sends it as a dict
     @classmethod
-    def get( cls, urlsafe_key ):
+    def get( cls, urlsafe_key="" ):
         data = request.form
 
         if DEVELOPING:
@@ -412,7 +420,7 @@ class RestApi( Resource ):
 
         model = cls.model_class.check_key( urlsafe_key, return_model = True )
 
-        if model is False:
+        if model == False:
             return { "status": False }, 400
 
         model_dict = model.to_dict( excludes=model.get_excludes() )
@@ -421,7 +429,7 @@ class RestApi( Resource ):
 
     # Updates the model with the data passed
     @classmethod
-    def post( cls, urlsafe_key ):
+    def post( cls, urlsafe_key="" ):
         data = request.form
 
         if DEVELOPING:
@@ -433,7 +441,7 @@ class RestApi( Resource ):
             check_model_type=True
         )
 
-        if model is False:
+        if model == False:
             return {"status": False, "msg": "bad key"}, 400
 
         success = model.update( data )
@@ -456,12 +464,13 @@ class RestApi( Resource ):
             if required_prop not in data:
                 return cls.make_response_dict(
                     status=False,
-                    msg="need all required properties to create model, missing: " + required_prop,
-                    required_properties=cls.model_class.get_required_properties() ), 400
+                    msg="missing property: " + required_prop,
+                    required_properties
+                    =cls.model_class.get_required_properties() ), 400
 
         urlsafe_key = cls.model_class.create( data )
 
-        if urlsafe_key is False or urlsafe_key is None:
+        if urlsafe_key == False or urlsafe_key is None:
             return { "status": False }, 500
         else:
             return { "status": True, "key": urlsafe_key }, 201

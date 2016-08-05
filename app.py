@@ -4,7 +4,7 @@ import logging
 # Import the Flask Framework
 from flask import Flask, render_template, request, Response
 # noinspection PyUnresolvedReferences
-from flask_restful import Resource, Api
+from flask_restful import Resource, Api, reqparse
 
 # Import to allow crossdomain requests
 from crossdomain import crossdomain
@@ -12,7 +12,7 @@ from crossdomain import crossdomain
 # Our stuff
 from rest_model import RestApi, RestsApi
 from topic_model import TopicApi, TopicsApi
-from launchlist_model import LaunchListApi, LaunchListsApi
+from launchlist_model import LaunchlistApi, LaunchlistsApi
 from resource_model import ResourceApi, ResourcesApi
 
 
@@ -21,6 +21,25 @@ api = Api( app )
 # TODO: turn app.debug and developing off when launching
 app.debug = True
 DEVELOPING = True
+
+
+# parse arguments that are sent with requests
+# with app.app_context():
+#     request_parse = reqparse.RequestParser()
+#     request_parse.add_argument(
+#         "name",
+#         type="string",
+#         help="name can't be converted",
+#         location="form"
+#     )
+#     # NOTE: cant use reqparse on url arguments
+#     request_parse.add_argument(
+#         "model_type",
+#         type="url",
+#         help="name can't be converted",
+#         location="headers"
+#     )
+#     request_args = request_parse.parse_args()
 
 
 # requests that will be routed to the RestModel class
@@ -47,25 +66,26 @@ api.add_resource(
 )
 
 api.add_resource(
-    LaunchListApi,
+    LaunchlistApi,
     "/app/launchlist/<urlsafe_key>",
     "/app/launchlist"
 )
 
 api.add_resource(
-    LaunchListsApi,
+    LaunchlistsApi,
     "/app/launchlists/<urlsafe_key>",
     "/app/launchlists/<urlsafe_key>/<string:list_type>"
 )
 
 api.add_resource( ResourceApi,
-    "/app/resource/<urlsafe_key>/<string:add_remove>/<launchlist_key",
-    "/app/resource/<urlsafe_key>",
+    "/app/resource/<string:urlsafe_key>/<string:add_remove>/<string:launchlist_key>",
+    "/app/resource/<string:urlsafe_key>",
     "/app/resource"
 )
 
 api.add_resource( ResourcesApi,
-    "/app/resources/<urlsafe_key>"
+    "/app/resources/<string:urlsafe_key>",
+    "/app/resources/<string:model_type>/<string:urlsafe_key>"
 )
 
 

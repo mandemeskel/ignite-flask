@@ -63,7 +63,7 @@ LAUNCHLIST_DESCRIPTIONS = [
 
 # NOTE: we should use something else for storing headings
 # NOTE: JsonProperty and use a dict to hold the heading?
-class LaunchListHeading( ndb.Model ):
+class LaunchlistHeading(ndb.Model):
     # the name that is displayed to the user
     name = ndb.StringProperty( default="Heading", required=True )
     # the launchlist this heading belongs to
@@ -76,7 +76,8 @@ class LaunchListHeading( ndb.Model ):
 
 
 
-class LaunchList( RestModel ):
+# DONE: refactor to Launchlist
+class Launchlist(RestModel):
 
     # TODO: do not allow multiline names
     # model information
@@ -95,8 +96,7 @@ class LaunchList( RestModel ):
     communities = ndb.KeyProperty( repeated=True )
     num_communities = ndb.ComputedProperty(
         lambda self: len(self.communities) )
-    rating = ndb.IntegerProperty( default=-1 )
-    headings = ndb.StructuredProperty( LaunchListHeading, repeated=True )
+    headings = ndb.StructuredProperty(LaunchlistHeading, repeated=True)
 
 
     # Creates set of dummy launchlists for passed object
@@ -171,7 +171,7 @@ class LaunchList( RestModel ):
     # Get list of items to exclude from to_dict
     @classmethod
     def get_excludes( cls, new_excludes=None ):
-        return super( LaunchList, cls ).get_excludes(
+        return super(Launchlist, cls).get_excludes(
             [
                 "resources", "topics", "child_launchlists",
                 "parent_launchlists", "headings", "communities"
@@ -181,7 +181,7 @@ class LaunchList( RestModel ):
     # Get list of properties necessary to create this model
     @classmethod
     def get_required_properties( cls, new_requires=None ):
-        return super( LaunchList, cls ).get_required_properties(
+        return super(Launchlist, cls).get_required_properties(
             [
                 "description",
                 "icon"
@@ -290,16 +290,16 @@ class LaunchList( RestModel ):
 
 
 
-class LaunchListApi( RestApi ):
+class LaunchlistApi(RestApi):
 
-    model_class = LaunchList
-
-
+    model_class = Launchlist
 
 
-class LaunchListsApi(RestsApi):
 
-    model_class = LaunchList
+
+class LaunchlistsApi(RestsApi):
+
+    model_class = Launchlist
 
     # Retrieves all the launchlists associated with the model
     @classmethod

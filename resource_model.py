@@ -35,9 +35,9 @@ RESOURCE_NAMES = [
     "How to create happiness"
 ]
 RESOURCE_LINKS = [
-    "mta.io",
-    "google.com",
-    "example.com",
+    "http://mta.io",
+    "https://www.google.com/",
+    "http://example.com/",
     "http://www.csszengarden.com/132/",
     "http://obduction.com/",
     "https://startuplaunchlist.com/"
@@ -131,6 +131,36 @@ RESOURCE_TYPES = ResourceTypes()
 
 
 
+class ModelTypes( object ):
+    def __init__( self ):
+        pass
+
+    @property
+    def launchlist( self ):
+        return "Launchlist"
+
+
+    @property
+    def member( self ):
+        return "Member"
+
+
+    @property
+    def resource( self ):
+        return "Resource"
+
+
+    @property
+    def tag( self ):
+        return "Tag"
+
+
+    @property
+    def topic( self ):
+        return "Topic"
+
+
+
 class ResourceModel( RestModel ):
     # url to the resource
     link = ndb.StringProperty( required=True )
@@ -144,7 +174,6 @@ class ResourceModel( RestModel ):
     launchlists = ndb.KeyProperty( repeated=True )
     num_launchlists = ndb.ComputedProperty(
         lambda self: len(self.launchlists) )
-    rating = ndb.IntegerProperty( default=-1 )
 
 
     # Checks to see if key is an actual entity key
@@ -155,26 +184,32 @@ class ResourceModel( RestModel ):
                    check_model_type="" ):
         try:
             model = ndb.Key( urlsafe=urlsafe_key ).get()
-        except Exception:
-            return False
+        except Exception as exception:
+            return ErrorMsg(
+                msg="cant get model from key",
+                log=exception.message,
+                exception=exception.__class__.__name__
+            )
 
         # make sure we are editing the right type of model
-        if check_model_type != "":
+        if check_model_type != "" and check_model_type is not False:
             # check model type against the calling cls
             if check_model_type is True:
-               if not isinstance( model, cls ):
-                   return False
-            # check model type against the user passed type
-            elif isinstance( check_model_type, basestring ):
-                if not type( model ).__name__ is not check_model_type:
-                    return False
-            # bad check_model_type value return false
-            else:
-                return False
+               check_model_type = type( cls ).__name__
 
+            if not type( model ).__name__ is not check_model_type:
+                return ErrorMsg(
+                    msg="model does not match model_type",
+                    log="model type: " + type( model ).__name__
+                    + " looking for model type: " + check_model_type
+                )
+
+        # TODO: check if this "if" is redundant
         if return_model:
             if model is None:
-                return False
+                return ErrorMsg(
+                    msg="key returned no model"
+                )
 
             return model
 
@@ -185,13 +220,13 @@ class ResourceModel( RestModel ):
     # return the instance
     @classmethod
     def create( cls, data ):
-        if data[ "type" ] not in ResourceTypes.types:
+        if data[ "resource_type" ] not in RESOURCE_TYPES.types:
             return False
 
         resource = cls(
             name=data[ "name" ],
             link=data[ "link" ],
-            type=data[ "type" ]
+            resource_type=data[ "resource_type" ]
         )
 
         try:
@@ -216,7 +251,7 @@ class ResourceModel( RestModel ):
             description = RESOURCE_DESCRIPTIONS[
                 int( (random() * 100 ) % len( RESOURCE_DESCRIPTIONS ) )
             ]
-            links = RESOURCE_LINKS[
+            link = RESOURCE_LINKS[
                 int( (random() * 100 ) % len( RESOURCE_LINKS ) )
             ]
             resource_type = RESOURCE_TYPES.types[
@@ -226,7 +261,7 @@ class ResourceModel( RestModel ):
             resource = cls(
                 name=name,
                 description=description,
-                links=links,
+                link=link,
                 resource_type=resource_type
             )
 
@@ -240,7 +275,7 @@ class ResourceModel( RestModel ):
             # save resource
             resource.put()
             resource_dicts.append( resource.to_dict(
-                includes=[ "name", "description", "link", "type", "rating"]
+                includes=[ "name", "description", "link", "resource_type", "rating"]
             ) )
 
             # add resource to launchlists list of resources
@@ -270,9 +305,9 @@ class ResourceModel( RestModel ):
     @classmethod
     def get_required_properties( cls, new_requires=None ):
         if new_requires is not None:
-            new_requires = new_requires.extend( ["link", "type"] )
+            new_requires = new_requires.extend( ["link", "resource_type"] )
         else:
-            new_requires = ["link", "type"]
+            new_requires = ["link", "resource_type"]
 
         return super(ResourceModel, cls).get_required_properties(
             new_requires
@@ -313,7 +348,7 @@ class ResourceModel( RestModel ):
     # return bool
     def edit_launchlist( self, launchlist, add=True, safe=False ):
         if safe is False:
-            if type( launchlist ).__name__ != "LaunchList":
+            if type( launchlist ).__name__ != "Launchlist":
                 return False
 
         new_list = self.edit_list( self.launchlists, launchlist.key, add )
@@ -326,16 +361,24 @@ class ResourceModel( RestModel ):
         return True
 
 
-
-# parse arguments that are sent with requests
-request_parse = reqparse.RequestParser()
-request_parse.add_argument(
-    "name",
-    type="string",
-    help="name can't be converted",
-    location="form"
-)
-request_args = request_parse.parse_args()
+# TODO: throws "working outside of request context" error
+# # parse arguments that are sent with requests
+# with app.app_context():
+#     request_parse = reqparse.RequestParser()
+#     request_parse.add_argument(
+#         "name",
+#         type="string",
+#         help="name can't be converted",
+#         location="form"
+#     )
+#     # NOTE: cant use reqparse on url arguments
+#     request_parse.add_argument(
+#         "model_type",
+#         type="url",
+#         help="name can't be converted",
+#         location="headers"
+#     )
+#     request_args = request_parse.parse_args()
 
 
 
@@ -356,8 +399,11 @@ class ResourceApi( RestApi ):
         launchlist = cls.model_class.check_key(
             urlsafe_key=launchlist_key,
             return_model=True,
-            check_model_type="LaunchList"
+            check_model_type=ModelTypes().launchlist
         )
+
+        if launchlist == False:
+            return launchlist.to_dict(), 400
 
         if add_remove == "add":
             success = cls.model_class.edit_launchlist(
@@ -389,7 +435,78 @@ class ResourceApi( RestApi ):
 
 
 
-class ResourcesApi( RestsApi ):
+class ResourcesApi( Resource ):
     model_class = ResourceModel
+    # TODO: this should be a attribute of super class, RestApi
+    MODEL_TYPES = ModelTypes()
 
+    @classmethod
+    def get( cls, model_type="", urlsafe_key="" ):
+        if model_type == "":
+            return {
+                "status": False,
+                "msg": "provide a model_type to get resources from"
+            }, 400
+        elif urlsafe_key == "":
+            return {
+                "status": False,
+                "msg": "provide key to get the resource from"
+            }, 400
 
+        # get resources belonging to this launchlist
+        if model_type == cls.MODEL_TYPES.launchlist.lower():
+            launchlist = cls.model_class.check_key(
+                urlsafe_key=urlsafe_key,
+                return_model=True,
+                check_model_type=model_type
+            )
+
+            if launchlist == False:
+                return launchlist.to_dict(), 400
+
+            resources = launchlist.resources
+
+            if DEVELOPING:
+                logging.log( logging.INFO, len(resources) )
+
+            if resources == []:
+                resources_dcts = cls.model_class.create_dummy_data(
+                    launchlist=launchlist
+                )
+
+                if DEVELOPING:
+                    logging.log( logging.INFO, "creating dummy sources" )
+            else:
+                resources_dcts = cls.model_class.convert_keys_to_dicts(
+                    resources,
+                    includes=[ "name", "description", "rating", "link" ]
+                )
+
+                if DEVELOPING:
+                    logging.log( logging.INFO, "getting sources" )
+
+            return {
+                "status": True,
+                "resources": resources_dcts
+            }, 200
+
+        elif model_type == cls.MODEL_TYPES.topic.lower():
+            return {
+                "status": True,
+                "msg": "endpoint not implemented for model " + model_type
+            }, 501
+        elif model_type == cls.MODEL_TYPES.tag.lower():
+            return {
+                "status": True,
+                "msg": "no " + model_type
+            }, 501
+        elif model_type == cls.MODEL_TYPES.member.lower():
+            return {
+                "status": True,
+                "msg": "no " + model_type
+            }, 501
+        else:
+            return {
+                "status": False,
+                "msg": "bad model type " + model_type
+            }, 400

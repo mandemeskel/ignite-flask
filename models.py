@@ -243,7 +243,7 @@ class LaunchListModel( ndb.Model ):
     parent_launchlists = ndb.KeyProperty( repeated=True )
     child_launchlists = ndb.KeyProperty( repeated=True )
     subtopics = ndb.KeyProperty( repeated=True )
-    # list of Resoruce that belong to this LaunchList
+    # list of Resoruce that belong to this Launchlist
     # only holds refrences, empty list by default
     resoruces = ndb.KeyProperty( repeated=True )
     # num_resoruce = ndb.IntegerProperty( default=0 )
