@@ -11,7 +11,7 @@ from google.appengine.ext import ndb
 # Import the Flask Framework
 from flask import Flask, render_template, request, Response
 # noinspection PyUnresolvedReferences
-from flask_restful import Resource, Api
+from flask_restful import Resource, Api, reqparse
 
 # Import to allow crossdomain requests
 from crossdomain import crossdomain
@@ -61,6 +61,29 @@ RESOURCE_DESCRIPTIONS = [
     "--Wheat, not oats, dear. I'm afraid \nif it's wheat it's none of your sowing, ",
     "nevertheless I'd like to know \nwhat you are doing and where you are going."
 ]
+
+
+
+class ErrorMsg( object ):
+    def __init__( self, msg="", **kwargs ):
+        # self.status = status
+        self.msg = msg
+        self.dct = { "msg": msg }
+        self.dct = { "status": False }
+        for key, value in kwargs.iteritems():
+            self.dct[ key ] = value
+
+
+    def to_dict( self ):
+        return self.dct
+
+
+    # overload '==' operator for backwards compatibility
+    def __eq__( self, other ):
+        if other is False:
+            return True
+
+        return super( ErrorMsg, self ).__eq__( other )
 
 
 
@@ -122,6 +145,40 @@ class ResourceModel( RestModel ):
     num_launchlists = ndb.ComputedProperty(
         lambda self: len(self.launchlists) )
     rating = ndb.IntegerProperty( default=-1 )
+
+
+    # Checks to see if key is an actual entity key
+    @classmethod
+    def check_key( cls,
+                   urlsafe_key,
+                   return_model=False,
+                   check_model_type="" ):
+        try:
+            model = ndb.Key( urlsafe=urlsafe_key ).get()
+        except Exception:
+            return False
+
+        # make sure we are editing the right type of model
+        if check_model_type != "":
+            # check model type against the calling cls
+            if check_model_type is True:
+               if not isinstance( model, cls ):
+                   return False
+            # check model type against the user passed type
+            elif isinstance( check_model_type, basestring ):
+                if not type( model ).__name__ is not check_model_type:
+                    return False
+            # bad check_model_type value return false
+            else:
+                return False
+
+        if return_model:
+            if model is None:
+                return False
+
+            return model
+
+        return True
 
 
     # Create an instance of ResourceModel
@@ -225,6 +282,13 @@ class ResourceModel( RestModel ):
     # Delete model from database
     # return bool
     def delete( self ):
+        # remove references to resource from launchlists
+        for launchlist in self.launchlists:
+            launchlist.edit_resources(
+                resource=self,
+                add=False,
+                safe=True
+            )
         return super( ResourceModel, self ).delete()
 
 
@@ -234,7 +298,9 @@ class ResourceModel( RestModel ):
                  object_props=None,
                  includes=None,
                  excludes=None ):
-        return super(ResourceModel, self).to_dict()
+        return super(ResourceModel, self).to_dict(
+            object_props, includes, excludes
+        )
 
 
     # Updates model with new data
@@ -261,12 +327,69 @@ class ResourceModel( RestModel ):
 
 
 
+# parse arguments that are sent with requests
+request_parse = reqparse.RequestParser()
+request_parse.add_argument(
+    "name",
+    type="string",
+    help="name can't be converted",
+    location="form"
+)
+request_args = request_parse.parse_args()
+
+
+
 class ResourceApi( RestApi ):
-    model_class = RestModel
+    model_class = ResourceModel
+
+    @classmethod
+    def post( cls, urlsafe_key="", add_remove="", launchlist_key="" ):
+        if add_remove == "":
+            return super( ResourceApi, cls ).post( urlsafe_key )
+
+        if launchlist_key == "":
+            return cls.make_response_dict(
+                status=False,
+                msg="bad launchlist key"
+            ), 400
+
+        launchlist = cls.model_class.check_key(
+            urlsafe_key=launchlist_key,
+            return_model=True,
+            check_model_type="LaunchList"
+        )
+
+        if add_remove == "add":
+            success = cls.model_class.edit_launchlist(
+                launchlist=launchlist,
+                add=True,
+                safe=True
+            )
+        elif add_remove == "remove":
+            success = cls.model_class.edit_launchlist(
+                launchlist=launchlist,
+                add=False,
+                safe=True
+            )
+        else:
+            success = launchlist.key in cls.model_class.launchlists
+            return cls.make_response_dict(
+                status=True,
+                msg="Is launchlist in resource: " + str( success ),
+                is_in=success
+            )
+
+        if success is True:
+            return { "status": True }, 200
+        elif isinstance( success, ErrorMsg ):
+            return success.to_dict(), 400
+        else:
+            return { "status": False }, 400
+
 
 
 
 class ResourcesApi( RestsApi ):
-    model_class = RestModel
+    model_class = ResourceModel
 
 

@@ -59,6 +59,7 @@ api.add_resource(
 )
 
 api.add_resource( ResourceApi,
+    "/app/resource/<urlsafe_key>/<string:add_remove>/<launchlist_key",
     "/app/resource/<urlsafe_key>",
     "/app/resource"
 )
