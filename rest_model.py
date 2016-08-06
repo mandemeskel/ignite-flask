@@ -23,6 +23,102 @@ DEVELOPING = True
 
 
 
+class ResourceTypes( object ):
+    def __init__(self):
+        pass
+
+    @property
+    def types(self):
+        return [
+            "community", "multimedia", "other",
+            "pictures", "text", "undefined", "video"
+        ]
+
+    @property
+    def community(self):
+        return "community"
+
+    @property
+    def multimedia(self):
+        return "multimedia"
+
+    @property
+    def other(self):
+        return "other"
+
+    @property
+    def pictures(self):
+        return "pictures"
+
+    @property
+    def text(self):
+        return "text"
+
+    @property
+    def undefined(self):
+        return "undefined"
+
+    @property
+    def video(self):
+        return "video"
+
+
+RESOURCE_TYPES = ResourceTypes()
+
+
+
+class ErrorMsg( object ):
+    def __init__( self, msg="", **kwargs ):
+        # self.status = status
+        self.msg = msg
+        self.dct = { "msg": msg }
+        self.dct = { "status": False }
+        for key, value in kwargs.iteritems():
+            self.dct[ key ] = value
+
+
+    def to_dict( self ):
+        return self.dct
+
+
+    # overload '==' operator for backwards compatibility
+    def __eq__( self, other ):
+        if other is False:
+            return True
+
+        return super( ErrorMsg, self ).__eq__( other )
+
+
+class ModelTypes( object ):
+    def __init__( self ):
+        pass
+
+    @property
+    def launchlist( self ):
+        return "Launchlist"
+
+
+    @property
+    def member( self ):
+        return "Member"
+
+
+    @property
+    def resource( self ):
+        return "Resource"
+
+
+    @property
+    def tag( self ):
+        return "Tag"
+
+
+    @property
+    def topic( self ):
+        return "Topic"
+
+
+
 class RESPONSE_STATUS():
     failed = False
     success = True
