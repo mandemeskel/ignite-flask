@@ -42,7 +42,7 @@ class User( RestModel ):
     # use'r role
     role = ndb.IntegerProperty( default=0 )
     # use'r rating
-    rating = ndb.RatingProperty( default=0 )
+    rating = ndb.IntegerProperty( default=0 )
     # topics belonging to the User
     topics = ndb.KeyProperty( repeated=True )
     num_topics = ndb.ComputedProperty(
@@ -65,7 +65,9 @@ class User( RestModel ):
         lambda self: len( self.following_topics ) )
 
     # firebase user id
-    uid = ndb.StringProperty()
+    uid = ndb.StringProperty( required=True )
+
+
     # photo_url = ndb.StringProperty()
 
 
@@ -110,6 +112,26 @@ class User( RestModel ):
         return True
 
 
+    @classmethod
+    def create( cls, data ):
+        name = data[ "name" ]
+        email = data[ "email" ]
+        description = data[ "description" ]
+        uid = data[ "uid" ]
+
+        model = cls(
+            name=name,
+            description=description,
+            email=email,
+            uid=uid
+        )
+
+        key = model.put()
+        if key == False:
+            return { "status": False, "msg": "failed to save" }, 400
+
+        return key.urlsafe()
+
     # Create dummy resources for a launchlist
     # return a list of resources' dicts
     @classmethod
@@ -136,7 +158,7 @@ class User( RestModel ):
     # Return list of necessary properties to create ResourceModel
     @classmethod
     def get_required_properties( cls, new_requires=None ):
-        requires = ["email", "uid"]
+        requires = [ "name", "email", "uid" ]
         if new_requires is not None:
             new_requires = new_requires.extend( requires )
         else:
@@ -381,6 +403,7 @@ class UserApi( RestApi ):
     @classmethod
     def put( cls ):
         pass
+
 
 
 class UserApis( Resource ):
