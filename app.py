@@ -14,6 +14,8 @@ from rest_model import RestApi, RestsApi
 from topic_model import TopicApi, TopicsApi
 from launchlist_model import LaunchlistApi, LaunchlistsApi
 from resource_model import ResourceApi, ResourcesApi
+from user_model import UserApi, UserApis
+
 
 
 app = Flask( __name__ )
@@ -21,6 +23,7 @@ api = Api( app )
 # TODO: turn app.debug and developing off when launching
 app.debug = True
 DEVELOPING = True
+
 
 
 # parse arguments that are sent with requests
@@ -77,15 +80,21 @@ api.add_resource(
     "/app/launchlists/<urlsafe_key>/<string:list_type>"
 )
 
-api.add_resource( ResourceApi,
+api.add_resource(
+    ResourceApi,
     "/app/resource/<string:urlsafe_key>/<string:add_remove>/<string:launchlist_key>",
     "/app/resource/<string:urlsafe_key>",
     "/app/resource"
 )
 
-api.add_resource( ResourcesApi,
+api.add_resource(
+    ResourcesApi,
     "/app/resources/<string:urlsafe_key>",
     "/app/resources/<string:model_type>/<string:urlsafe_key>"
 )
 
-
+api.add_resource(
+    UserApi,
+    "/app/user/<string:urlsafe_key>/<string:list_name>",
+    "/app/user/<string:urlsafe_key>"
+)

@@ -337,7 +337,6 @@ class ResourceApi( RestApi ):
 
 
 
-
 class ResourcesApi( Resource ):
     model_class = ResourceModel
     # TODO: this should be a attribute of super class, RestApi
@@ -357,13 +356,15 @@ class ResourcesApi( Resource ):
             }, 400
 
         # get resources belonging to this launchlist
-        if model_type == cls.MODEL_TYPES.launchlist.lower():
+        model_type = model_type.capitalize()
+        if model_type == cls.MODEL_TYPES.launchlist:
             launchlist = cls.model_class.check_key(
                 urlsafe_key=urlsafe_key,
                 return_model=True,
                 check_model_type=model_type
             )
 
+            # if launchlist is instance of ErrorMsg then it equals false
             if launchlist == False:
                 return launchlist.to_dict(), 400
 
@@ -393,17 +394,17 @@ class ResourcesApi( Resource ):
                 "resources": resources_dcts
             }, 200
 
-        elif model_type == cls.MODEL_TYPES.topic.lower():
+        elif model_type == cls.MODEL_TYPES.topic:
             return {
                 "status": True,
                 "msg": "endpoint not implemented for model " + model_type
             }, 501
-        elif model_type == cls.MODEL_TYPES.tag.lower():
+        elif model_type == cls.MODEL_TYPES.tag:
             return {
                 "status": True,
                 "msg": "no " + model_type
             }, 501
-        elif model_type == cls.MODEL_TYPES.member.lower():
+        elif model_type == cls.MODEL_TYPES.member:
             return {
                 "status": True,
                 "msg": "no " + model_type

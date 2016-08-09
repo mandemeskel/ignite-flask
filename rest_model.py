@@ -160,7 +160,7 @@ class RestModel( ndb.Model ):
         default="../icons/apple_music_icon_trns.png"
     )
 
-    # search realted properties
+    # search related properties
     tags = ndb.KeyProperty( repeated=True )
     num_tags = ndb.IntegerProperty( default=0 )
     rating = ndb.IntegerProperty( default=-1 )
@@ -168,13 +168,17 @@ class RestModel( ndb.Model ):
     # user related properties
     # TODO: use kind argument to force list to have a specific model subclass, string or model subclass works
     creators = ndb.KeyProperty( repeated=True )
-    num_creators = ndb.IntegerProperty( default=0 )
+    num_creators = ndb.ComputedProperty(
+        lambda self: len(self.creators) )
     admins = ndb.KeyProperty( repeated=True )
-    num_admins = ndb.IntegerProperty( default=0 )
+    num_admins = ndb.ComputedProperty(
+        lambda self: len(self.admin) )
     contributors = ndb.KeyProperty( repeated=True )
-    num_contributors = ndb.IntegerProperty( default=0 )
+    num_contributors = ndb.ComputedProperty(
+        lambda self: len(self.contributors) )
     editors = ndb.KeyProperty( repeated=True )
-    num_editors = ndb.IntegerProperty( default=0 )
+    num_editors = ndb.ComputedProperty(
+        lambda self: len(self.editors) )
 
     # whether or not this model is public and searchable or private
     private = ndb.BooleanProperty( default=False )
