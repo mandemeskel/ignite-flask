@@ -25,10 +25,11 @@ angular.module('starter', ['ionic', 'starter.controllers'])
 .config(function($stateProvider, $urlRouterProvider) {
   $stateProvider
 
-    .state('app', {
+  .state('app', {
     url: '/app',
-    abstract: true,
-    templateUrl: 'templates/menu.html',
+    // abstract: true,
+    // template: "<p>fucking shit tutorials<p>"
+    templateUrl: 'launchlist/www/templates/menu.html',
     controller: 'AppCtrl'
   })
 
@@ -68,6 +69,8 @@ angular.module('starter', ['ionic', 'starter.controllers'])
       }
     }
   });
+
   // if none of the above states are matched, use this as the fallback
-  $urlRouterProvider.otherwise('/app/playlists');
+  $urlRouterProvider.otherwise( '' );
+
 });
